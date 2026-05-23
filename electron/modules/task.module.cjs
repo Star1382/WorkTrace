@@ -152,7 +152,9 @@ module.exports = {
 
     ipcMain.handle('task:toggleStatus', async (event, taskId, newStatus) => {
       try {
-        tasks.toggleStatus(taskId, newStatus);
+        const { TASK_STATUS } = require('../../shared/domain.cjs');
+        const completedAt = newStatus === TASK_STATUS.DONE ? new Date().toISOString() : null;
+        tasks.toggleStatus(taskId, newStatus, completedAt);
         return { success: true };
       } catch (error) {
         return { success: false, error: error.message };

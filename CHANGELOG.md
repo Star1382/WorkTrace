@@ -2,6 +2,24 @@
 
 本文档记录 WorkTrace 的主要功能变更、修复和交付状态。
 
+## 2026-05-24 - v0.4.1 职责分离修复
+
+状态：已完成 repository 层职责分离，将业务逻辑从数据访问层上提到模块层。
+
+### Changed
+
+- `electron/repositories/task.repository.cjs`：`toggleStatus` 简化为纯 SQL 写入，移除 DONE 状态判断分支，不再自行决定 `completed_at` 的值。
+- `electron/modules/task.module.cjs`：`task:toggleStatus` handler 新增业务判断——标为"完成"时写入当前时间戳，非"完成"时清空 `completed_at`。
+
+### Rationale
+
+Repository 层应只负责数据存取，不应混入状态机规则。将 `completed_at` 的赋值逻辑从 repository 上提到 module 层，职责更清晰，符合低耦合设计原则。
+
+### Verified
+
+- 两文件修改后语法检查通过。
+- 对外接口（preload / 前端 service）无变化，无需同步修改。
+
 ## 2026-05-24 - v0.4 视图体系、低耦合重构与快速添加
 
 状态：已完成 v0.4 视图调整、模块边界下沉、后端 repository 抽取、preload 白名单收紧，并新增一句话快速创建任务。

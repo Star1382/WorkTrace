@@ -144,20 +144,12 @@ function createTaskRepository(db) {
       );
     },
 
-    toggleStatus(taskId, newStatus) {
-      if (newStatus === TASK_STATUS.DONE) {
-        db.prepare(`
-          UPDATE tasks
-          SET status = ?, completed_at = datetime('now'), updated_at = datetime('now')
-          WHERE id = ?
-        `).run(newStatus, taskId);
-        return;
-      }
+    toggleStatus(taskId, status, completedAt = null) {
       db.prepare(`
         UPDATE tasks
-        SET status = ?, completed_at = NULL, updated_at = datetime('now')
+        SET status = ?, completed_at = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).run(newStatus, taskId);
+      `).run(status, completedAt, taskId);
     },
 
     delete(taskId) {

@@ -100,7 +100,7 @@ npm.cmd run build
 
 交接时间：2026-05-24
 
-当前状态：模块 1 MVP、Phase 1、Phase 2、Phase 3、Phase 4、Phase 5 中的快捷键/右键菜单边界已完成；v0.4 的视图体系调整、低耦合重构和快速添加已完成。模块 5 知识库接口在 SPEC 中标注为远期，当前未开发。
+当前状态：模块 1 MVP、Phase 1、Phase 2、Phase 3、Phase 4、Phase 5 中的快捷键/右键菜单边界已完成；v0.4 的视图体系调整、低耦合重构和快速添加已完成；**v0.4.1 已完成 repository 层职责分离（toggleStatus 业务逻辑从数据层上提到模块层）**。模块 5 知识库接口在 SPEC 中标注为远期，当前未开发。
 
 ### 已完成内容
 
