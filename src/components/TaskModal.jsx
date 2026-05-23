@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as domain from '../shared/domain.js';
+import { showToast } from './Toast';
 
 const { TASK_STATUS, TASK_STATUS_OPTIONS, QUADRANT_OPTIONS } = domain;
 
@@ -39,7 +40,7 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!title.trim()) {
-      alert('请输入任务标题');
+      showToast('请输入任务标题', 'error');
       return;
     }
     onSave({

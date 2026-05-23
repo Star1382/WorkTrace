@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Calendar from './components/Calendar';
 import TaskModal from './components/TaskModal';
 import StatusBar from './components/StatusBar';
+import ErrorBoundary from './components/ErrorBoundary';
+import { ToastProvider } from './components/Toast';
 import { taskService } from './services/taskService';
 import { statsService } from './services/statsService';
 import { defaultModuleKey, featureModules } from './modules';
@@ -211,7 +213,9 @@ function App() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
+    <ErrorBoundary>
+      <ToastProvider>
+        <div className="h-screen flex flex-col bg-gray-100">
       <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
         <h1 className="text-lg font-bold">WorkTrace</h1>
       </div>
@@ -307,6 +311,8 @@ function App() {
         />
       )}
     </div>
+    </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

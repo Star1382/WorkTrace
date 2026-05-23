@@ -3,6 +3,8 @@ const { ACTIVE_STATUSES } = require('../../shared/domain.cjs');
 
 const CHECK_INTERVAL_MS = 60 * 1000;
 const START_DELAY_MS = 5 * 1000;
+const MAX_NOTIFIED_KEYS = 1000;
+const KEY_CLEANUP_INTERVAL_MS = 30 * 60 * 1000;
 
 function parseReminderTime(value) {
   if (!value) {
@@ -55,14 +57,23 @@ module.exports = {
   name: 'reminder',
 
   registerHandlers(ipcMain, db, context = {}) {
-    const notifiedKeys = new Set();
+    const notifiedKeys = new Map();
+    
+    const cleanupOldKeys = () => {
+      if (notifiedKeys.size > MAX_NOTIFIED_KEYS) {
+        const entries = Array.from(notifiedKeys.entries());
+        const toRemove = entries.slice(0, entries.length - MAX_NOTIFIED_KEYS);
+        toRemove.forEach(([key]) => notifiedKeys.delete(key));
+      }
+    };
 
     const showNotification = (task) => {
       const key = `${task.id}:${task.remind_at}`;
       if (notifiedKeys.has(key)) {
         return;
       }
-      notifiedKeys.add(key);
+      notifiedKeys.set(key, Date.now());
+      cleanupOldKeys();
 
       if (!Notification.isSupported()) {
         focusTask(context, task);
@@ -111,5 +122,6 @@ module.exports = {
 
     setTimeout(checkAndNotify, START_DELAY_MS);
     setInterval(checkAndNotify, CHECK_INTERVAL_MS);
+    setInterval(cleanupOldKeys, KEY_CLEANUP_INTERVAL_MS);
   }
 };
