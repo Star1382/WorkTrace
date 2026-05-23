@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import * as domain from '../shared/domain.js';
+
+const { TASK_STATUS, TASK_STATUS_OPTIONS, QUADRANT_OPTIONS } = domain;
 
 function TaskModal({ task, defaultDueDate, onSave, onClose }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [quadrant, setQuadrant] = useState(0);
-  const [status, setStatus] = useState('todo');
+  const [status, setStatus] = useState(TASK_STATUS.TODO);
   const [dueDate, setDueDate] = useState(defaultDueDate || '');
   const [remindAt, setRemindAt] = useState('');
 
@@ -20,14 +23,14 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
       setTitle(task.title || '');
       setDescription(task.description || '');
       setQuadrant(task.quadrant || 0);
-      setStatus(task.status || 'todo');
+      setStatus(task.status || TASK_STATUS.TODO);
       setDueDate(task.due_date || defaultDueDate || '');
       setRemindAt(toDateTimeLocalValue(task.remind_at));
     } else {
       setTitle('');
       setDescription('');
       setQuadrant(0);
-      setStatus('todo');
+      setStatus(TASK_STATUS.TODO);
       setDueDate(defaultDueDate || '');
       setRemindAt('');
     }
@@ -79,21 +82,13 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
     setRemindAt(formatDateTimeLocal(next));
   };
 
-  const quadrantOptions = [
-    { value: 0, label: '未分类', color: 'bg-gray-100 text-gray-700' },
-    { value: 1, label: '紧急重要', color: 'bg-red-100 text-red-700' },
-    { value: 2, label: '紧急不重要', color: 'bg-amber-100 text-amber-700' },
-    { value: 3, label: '重要不紧急', color: 'bg-blue-100 text-blue-700' },
-    { value: 4, label: '不重要不紧急', color: 'bg-green-100 text-green-700' }
-  ];
-
-  const statusOptions = [
-    { value: 'todo', label: '待办' },
-    { value: 'in_progress', label: '进行中' },
-    { value: 'done', label: '已完成' },
-    { value: 'stuck', label: '阻塞' },
-    { value: 'cancelled', label: '已取消' }
-  ];
+  const quadrantStyles = {
+    0: 'bg-gray-100 text-gray-700',
+    1: 'bg-red-100 text-red-700',
+    2: 'bg-amber-100 text-amber-700',
+    3: 'bg-blue-100 text-blue-700',
+    4: 'bg-green-100 text-green-700'
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -143,14 +138,14 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
               四象限
             </label>
             <div className="grid grid-cols-5 gap-2">
-              {quadrantOptions.map((opt) => (
+              {QUADRANT_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => setQuadrant(opt.value)}
                   className={`py-2 px-2 text-xs rounded-lg border transition-colors ${
                     quadrant === opt.value
-                      ? opt.color + ' border-transparent font-medium'
+                      ? `${quadrantStyles[opt.value]} border-transparent font-medium`
                       : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
                   }`}
                 >
@@ -169,7 +164,7 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
               onChange={(e) => setStatus(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
             >
-              {statusOptions.map((opt) => (
+              {TASK_STATUS_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>

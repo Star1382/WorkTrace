@@ -14,21 +14,9 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { taskService } from '../services/taskService';
+import * as domain from '../shared/domain.js';
 
-const quadrants = [
-  { id: 1, title: '紧急重要', description: '立刻推进', color: 'border-red-200 bg-red-50', badge: 'bg-red-100 text-red-700' },
-  { id: 2, title: '紧急不重要', description: '快速处理', color: 'border-amber-200 bg-amber-50', badge: 'bg-amber-100 text-amber-700' },
-  { id: 3, title: '重要不紧急', description: '计划推进', color: 'border-blue-200 bg-blue-50', badge: 'bg-blue-100 text-blue-700' },
-  { id: 4, title: '不重要不紧急', description: '低优先级', color: 'border-green-200 bg-green-50', badge: 'bg-green-100 text-green-700' }
-];
-
-const statusLabels = {
-  todo: '待办',
-  in_progress: '进行中',
-  done: '已完成',
-  stuck: '阻塞',
-  cancelled: '已取消'
-};
+const { TASK_STATUS, TASK_STATUS_LABELS, QUADRANT_LABELS, BOARD_QUADRANTS } = domain;
 
 const statusStyles = {
   todo: 'bg-gray-100 text-gray-600',
@@ -37,6 +25,18 @@ const statusStyles = {
   stuck: 'bg-red-100 text-red-700',
   cancelled: 'bg-gray-100 text-gray-500'
 };
+
+const quadrantStyles = {
+  1: { color: 'border-red-200 bg-red-50', badge: 'bg-red-100 text-red-700' },
+  2: { color: 'border-amber-200 bg-amber-50', badge: 'bg-amber-100 text-amber-700' },
+  3: { color: 'border-blue-200 bg-blue-50', badge: 'bg-blue-100 text-blue-700' },
+  4: { color: 'border-green-200 bg-green-50', badge: 'bg-green-100 text-green-700' }
+};
+
+const quadrants = BOARD_QUADRANTS.map((quadrant) => ({
+  ...quadrant,
+  ...quadrantStyles[quadrant.id]
+}));
 
 function formatShortDate(value) {
   if (!value) {
@@ -104,13 +104,13 @@ function BoardCard({ task, onEdit, onToggleStatus }) {
         <button
           onClick={() => onToggleStatus(task.id, task.status)}
           className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-            task.status === 'done'
+            task.status === TASK_STATUS.DONE
               ? 'bg-green-500 border-green-500 text-white'
               : 'border-gray-300 hover:border-blue-400'
           }`}
           title="切换完成状态"
         >
-          {task.status === 'done' && '✓'}
+          {task.status === TASK_STATUS.DONE && '✓'}
         </button>
         <button
           type="button"
@@ -128,7 +128,7 @@ function BoardCard({ task, onEdit, onToggleStatus }) {
       <div className="flex items-center justify-between gap-2 mt-3">
         <div className="flex items-center gap-2 min-w-0">
           <span className={`text-xs px-2 py-0.5 rounded ${statusStyles[task.status] || statusStyles.todo}`}>
-            {statusLabels[task.status] || task.status}
+            {TASK_STATUS_LABELS[task.status] || task.status}
           </span>
           <span className="text-xs text-gray-500">{formatShortDate(task.due_date)}</span>
         </div>
@@ -243,12 +243,12 @@ function QuadrantBoard({ refreshKey, onTaskMoved, onEditTask, onToggleStatus }) 
 
       {uncategorized.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <h3 className="font-semibold text-gray-800 mb-3">未分类任务</h3>
+          <h3 className="font-semibold text-gray-800 mb-3">{QUADRANT_LABELS[0]}任务</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {uncategorized.map((task) => (
               <div key={task.id} className="border border-gray-200 rounded-lg p-3">
                 <div className="font-medium text-sm text-gray-900">{task.title}</div>
-                <div className="text-xs text-gray-500 mt-1">{statusLabels[task.status] || task.status} · {formatShortDate(task.due_date)}</div>
+                <div className="text-xs text-gray-500 mt-1">{TASK_STATUS_LABELS[task.status] || task.status} · {formatShortDate(task.due_date)}</div>
               </div>
             ))}
           </div>

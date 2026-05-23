@@ -1,6 +1,8 @@
 /**
  * Stats 模块 - 统计数据
  */
+const { TASK_STATUS } = require('../../shared/domain.cjs');
+
 module.exports = {
   name: 'stats',
   
@@ -14,9 +16,9 @@ module.exports = {
         const tasks = db.prepare(`
           SELECT quadrant, COUNT(*) as count 
           FROM tasks 
-          WHERE status != 'done' AND quadrant BETWEEN 1 AND 4
+          WHERE status != ? AND quadrant BETWEEN 1 AND 4
           GROUP BY quadrant
-        `).all();
+        `).all(TASK_STATUS.DONE);
         
         const result = { 1: 0, 2: 0, 3: 0, 4: 0 };
         tasks.forEach(t => {
@@ -50,9 +52,9 @@ module.exports = {
         
         const doneResult = db.prepare(`
           SELECT COUNT(*) as count 
-          FROM tasks 
-          WHERE due_date BETWEEN ? AND ? AND status = 'done'
-        `).get(formatDate(startOfWeek), formatDate(endOfWeek));
+          FROM tasks
+          WHERE due_date BETWEEN ? AND ? AND status = ?
+        `).get(formatDate(startOfWeek), formatDate(endOfWeek), TASK_STATUS.DONE);
         
         return {
           success: true,

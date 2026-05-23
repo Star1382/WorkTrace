@@ -2,6 +2,42 @@
 
 本文档记录 WorkTrace 的主要功能变更、修复和交付状态。
 
+## 2026-05-23 - 模块化边界加固
+
+状态：已按“主体保留接口、功能模块独立接入”的目标，加固前端功能模块注册和共享领域定义。
+
+### Added
+
+- 新增共享领域数据源：`shared/domain.json`。
+  - 统一维护任务状态、状态文案、状态符号、待推进状态、四象限定义和四象限文案。
+- 新增共享领域封装：
+  - `shared/domain.cjs` 供 Electron 主进程模块使用。
+  - `src/shared/domain.js` 供 React 前端模块使用。
+- 新增前端功能模块目录：`src/modules/`。
+- 新增功能模块声明文件：
+  - `src/modules/today.module.jsx`
+  - `src/modules/board.module.jsx`
+  - `src/modules/weekly.module.jsx`
+  - `src/modules/monthly.module.jsx`
+- 新增前端模块注册入口：`src/modules/index.js`。
+  - 使用 `import.meta.glob('./*.module.jsx', { eager: true })` 自动发现功能模块。
+  - 功能模块通过 `key`、`label`、`order`、`render(context)` 接入主体。
+
+### Changed
+
+- `src/App.jsx` 不再直接硬编码导入今日、看板、周报、月报视图。
+- 主体 tab 和主区域渲染改为读取 `featureModules`。
+- 今日、看板、周报、月报被迁移为独立前端功能模块声明。
+- `TaskList.jsx`、`TaskModal.jsx`、`QuadrantBoard.jsx`、`ReportPanel.jsx` 改为复用共享任务状态和四象限定义。
+- `task.module.cjs`、`stats.module.cjs`、`report.module.cjs`、`reminder.module.cjs` 改为复用共享任务状态定义，减少状态字符串散落。
+
+### Verified
+
+- 已执行生产构建：
+  - `npm.cmd run build`
+- 已验证 Electron 业务模块可加载：
+  - `node -e "require('./electron/modules/task.module.cjs'); require('./electron/modules/stats.module.cjs'); require('./electron/modules/report.module.cjs'); require('./electron/modules/reminder.module.cjs'); console.log('modules ok')"`
+
 ## 2026-05-23 - Phase 3/4/5 补齐版
 
 状态：已继续完成 SPEC 中的四象限看板、提醒引擎和主要快捷键体验项。

@@ -1,6 +1,8 @@
 /**
  * Task 模块 - 任务 CRUD 操作
  */
+const { TASK_STATUS } = require('../../shared/domain.cjs');
+
 module.exports = {
   name: 'task',
   
@@ -39,9 +41,9 @@ module.exports = {
         const tasks = excludeDone
           ? db.prepare(`
               SELECT * FROM tasks
-              WHERE status != 'done'
+              WHERE status != ?
               ORDER BY quadrant ASC, due_date ASC, created_at ASC
-            `).all()
+            `).all(TASK_STATUS.DONE)
           : db.prepare(`
               SELECT * FROM tasks
               ORDER BY quadrant ASC, due_date ASC, created_at ASC
@@ -63,7 +65,7 @@ module.exports = {
           task.title,
           task.description || '',
           task.quadrant || 0,
-          task.status || 'todo',
+          task.status || TASK_STATUS.TODO,
           task.due_date,
           task.remind_at || null
         );
@@ -97,7 +99,7 @@ module.exports = {
     
     ipcMain.handle('task:toggleStatus', async (event, taskId, newStatus) => {
       try {
-        if (newStatus === 'done') {
+        if (newStatus === TASK_STATUS.DONE) {
           db.prepare(`
             UPDATE tasks 
             SET status = ?, completed_at = datetime('now'), updated_at = datetime('now') 

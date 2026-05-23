@@ -1,4 +1,5 @@
 const { Notification } = require('electron');
+const { ACTIVE_STATUSES } = require('../../shared/domain.cjs');
 
 const CHECK_INTERVAL_MS = 60 * 1000;
 const START_DELAY_MS = 5 * 1000;
@@ -20,9 +21,9 @@ function getDueReminderTasks(db) {
     FROM tasks
     WHERE remind_at IS NOT NULL
       AND remind_at != ''
-      AND status NOT IN ('done', 'cancelled')
+      AND status IN (${ACTIVE_STATUSES.map(() => '?').join(', ')})
     ORDER BY remind_at ASC
-  `).all().filter((task) => {
+  `).all(...ACTIVE_STATUSES).filter((task) => {
     const remindAt = parseReminderTime(task.remind_at);
     return remindAt && remindAt <= now;
   });

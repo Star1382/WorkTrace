@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Calendar from './components/Calendar';
-import TaskList from './components/TaskList';
 import TaskModal from './components/TaskModal';
 import StatusBar from './components/StatusBar';
-import WeeklyReport from './components/WeeklyReport';
-import MonthlyReport from './components/MonthlyReport';
-import QuadrantBoard from './components/QuadrantBoard';
 import { taskService } from './services/taskService';
 import { statsService } from './services/statsService';
+import { defaultModuleKey, featureModules } from './modules';
+import * as domain from './shared/domain.js';
+
+const { TASK_STATUS, QUADRANT_LABELS } = domain;
 
 function App() {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [activeView, setActiveView] = useState('today');
+  const [activeView, setActiveView] = useState(defaultModuleKey);
   const [tasks, setTasks] = useState([]);
   const [quadrantStats, setQuadrantStats] = useState({ 1: 0, 2: 0, 3: 0, 4: 0 });
   const [weekStats, setWeekStats] = useState({ total: 0, done: 0 });
@@ -92,7 +92,7 @@ function App() {
   };
 
   const handleToggleStatus = async (taskId, currentStatus) => {
-    const newStatus = currentStatus === 'done' ? 'todo' : 'done';
+    const newStatus = currentStatus === TASK_STATUS.DONE ? TASK_STATUS.TODO : TASK_STATUS.DONE;
     await taskService.toggleStatus(taskId, newStatus);
     refreshAll();
   };
@@ -117,12 +117,7 @@ function App() {
     weekday: 'long'
   });
 
-  const tabs = [
-    { key: 'today', label: '今日' },
-    { key: 'board', label: '看板' },
-    { key: 'weekly', label: '周报' },
-    { key: 'monthly', label: '月报' }
-  ];
+  const tabs = featureModules.map(({ key, label }) => ({ key, label }));
 
   useEffect(() => {
     if (!window.electronAPI?.on) {
@@ -195,6 +190,26 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showModal, selectedTaskId, tasks]);
 
+  const selectedDateValue = formatDate(selectedDate);
+  const activeModule = featureModules.find((module) => module.key === activeView) || featureModules[0];
+  const moduleContext = {
+    tasks,
+    highlightedTaskId,
+    selectedTaskId,
+    selectedDate,
+    selectedDateValue,
+    refreshKey,
+    setSelectedDate,
+    setSelectedTaskId,
+    handleAddTask,
+    handleEditTask,
+    handleSaveTask,
+    handleToggleStatus,
+    handleChangeStatus,
+    handleDeleteTask,
+    refreshAll
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
@@ -210,28 +225,28 @@ function App() {
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center">
                   <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
-                  <span>紧急重要</span>
+                  <span>{QUADRANT_LABELS[1]}</span>
                 </div>
                 <span className="font-medium">{quadrantStats[1]}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center">
                   <span className="w-3 h-3 rounded-full bg-amber-500 mr-2"></span>
-                  <span>紧急不重要</span>
+                  <span>{QUADRANT_LABELS[2]}</span>
                 </div>
                 <span className="font-medium">{quadrantStats[2]}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center">
                   <span className="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
-                  <span>重要不紧急</span>
+                  <span>{QUADRANT_LABELS[3]}</span>
                 </div>
                 <span className="font-medium">{quadrantStats[3]}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center">
                   <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
-                  <span>不重要不紧急</span>
+                  <span>{QUADRANT_LABELS[4]}</span>
                 </div>
                 <span className="font-medium">{quadrantStats[4]}</span>
               </div>
@@ -270,33 +285,7 @@ function App() {
           </div>
 
           <div className="flex-1 overflow-auto p-6">
-            {activeView === 'today' && (
-              <TaskList
-                tasks={tasks}
-                highlightedTaskId={highlightedTaskId}
-                selectedTaskId={selectedTaskId}
-                onSelectTask={setSelectedTaskId}
-                onToggleStatus={handleToggleStatus}
-                onChangeStatus={handleChangeStatus}
-                onEdit={handleEditTask}
-                onDelete={handleDeleteTask}
-                onAdd={handleAddTask}
-              />
-            )}
-            {activeView === 'weekly' && (
-              <WeeklyReport date={formatDate(selectedDate)} refreshKey={refreshKey} />
-            )}
-            {activeView === 'monthly' && (
-              <MonthlyReport date={formatDate(selectedDate)} refreshKey={refreshKey} />
-            )}
-            {activeView === 'board' && (
-              <QuadrantBoard
-                refreshKey={refreshKey}
-                onTaskMoved={refreshAll}
-                onEditTask={handleEditTask}
-                onToggleStatus={handleToggleStatus}
-              />
-            )}
+            {activeModule?.render(moduleContext)}
           </div>
 
           <div className="bg-white border-t border-gray-200 px-6 py-3">

@@ -1,0 +1,17 @@
+{
+  "taskStatuses": [
+    { "value": "todo", "label": "待办", "symbol": "☐" },
+    { "value": "in_progress", "label": "进行中", "symbol": "◐" },
+    { "value": "done", "label": "已完成", "symbol": "✓" },
+    { "value": "stuck", "label": "阻塞", "symbol": "⚠" },
+    { "value": "cancelled", "label": "已取消", "symbol": "✗" }
+  ],
+  "pendingStatuses": ["todo", "in_progress", "stuck"],
+  "quadrants": [
+    { "id": 0, "title": "未分类", "description": "待归类", "colorKey": "gray" },
+    { "id": 1, "title": "紧急重要", "description": "立刻推进", "colorKey": "red" },
+    { "id": 2, "title": "紧急不重要", "description": "快速处理", "colorKey": "amber" },
+    { "id": 3, "title": "重要不紧急", "description": "计划推进", "colorKey": "blue" },
+    { "id": 4, "title": "不重要不紧急", "description": "低优先级", "colorKey": "green" }
+  ]
+}

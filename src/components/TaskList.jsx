@@ -1,4 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
+import * as domain from '../shared/domain.js';
+
+const { TASK_STATUS, TASK_STATUS_OPTIONS, TASK_STATUS_LABELS, QUADRANT_LABELS } = domain;
 
 function TaskList({
   tasks,
@@ -64,21 +67,9 @@ function TaskList({
     }
   }, [highlightedTaskId]);
 
-  const getStatusLabel = (status) => {
-    const labels = {
-      todo: '待办',
-      in_progress: '进行中',
-      done: '已完成',
-      stuck: '阻塞',
-      cancelled: '已取消'
-    };
-    return labels[status] || status;
-  };
-
-  const getQuadrantLabel = (quadrant) => {
-    const labels = { 0: '未分类', 1: '紧急重要', 2: '紧急不重要', 3: '重要不紧急', 4: '不重要不紧急' };
-    return labels[quadrant] || '未分类';
-  };
+  const contextMenuStatuses = TASK_STATUS_OPTIONS.filter(
+    (status) => status.value !== TASK_STATUS.CANCELLED
+  );
 
   return (
     <div className="space-y-4">
@@ -94,7 +85,7 @@ function TaskList({
             ref={(node) => { taskRefs.current[task.id] = node; }}
             onClick={() => onSelectTask(task.id)}
             className={`bg-white rounded-lg shadow-sm p-4 flex items-start gap-3 hover:shadow-md transition-shadow cursor-pointer ${
-              task.status === 'done' ? 'opacity-70' : ''
+              task.status === TASK_STATUS.DONE ? 'opacity-70' : ''
             } ${
               selectedTaskId === task.id ? 'ring-2 ring-blue-300' : ''
             } ${
@@ -105,15 +96,15 @@ function TaskList({
             <button
               onClick={(e) => { e.stopPropagation(); onToggleStatus(task.id, task.status); }}
               className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0
-                ${task.status === 'done' ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-blue-400'}`}
+                ${task.status === TASK_STATUS.DONE ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-blue-400'}`}
             >
-              {task.status === 'done' && '✓'}
+              {task.status === TASK_STATUS.DONE && '✓'}
             </button>
 
             <div className={`w-1 h-12 rounded-full ${quadrantColors[task.quadrant] || 'bg-gray-300'}`}></div>
 
             <div className="flex-1 min-w-0">
-              <h3 className={`font-medium text-gray-800 ${task.status === 'done' ? 'line-through text-gray-400' : ''}`}>
+              <h3 className={`font-medium text-gray-800 ${task.status === TASK_STATUS.DONE ? 'line-through text-gray-400' : ''}`}>
                 {task.title}
               </h3>
               {task.description && (
@@ -127,16 +118,16 @@ function TaskList({
                   task.quadrant === 4 ? 'bg-green-100 text-green-700' :
                   'bg-gray-100 text-gray-600'
                 }`}>
-                  {getQuadrantLabel(task.quadrant)}
+                  {QUADRANT_LABELS[task.quadrant] || QUADRANT_LABELS[0]}
                 </span>
                 <span className={`text-xs px-2 py-0.5 rounded ${
-                  task.status === 'todo' ? 'bg-gray-100 text-gray-600' :
-                  task.status === 'in_progress' ? 'bg-blue-100 text-blue-600' :
-                  task.status === 'done' ? 'bg-green-100 text-green-600' :
-                  task.status === 'stuck' ? 'bg-red-100 text-red-600' :
+                  task.status === TASK_STATUS.TODO ? 'bg-gray-100 text-gray-600' :
+                  task.status === TASK_STATUS.IN_PROGRESS ? 'bg-blue-100 text-blue-600' :
+                  task.status === TASK_STATUS.DONE ? 'bg-green-100 text-green-600' :
+                  task.status === TASK_STATUS.STUCK ? 'bg-red-100 text-red-600' :
                   'bg-gray-100 text-gray-600'
                 }`}>
-                  {getStatusLabel(task.status)}
+                  {TASK_STATUS_LABELS[task.status] || task.status}
                 </span>
               </div>
             </div>
@@ -173,30 +164,15 @@ function TaskList({
           className="fixed w-44 bg-white rounded-lg shadow-lg border py-1 z-50"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
-          <button
-            onClick={() => handleStatusChange(contextMenu.task.id, 'todo')}
-            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${contextMenu.task.status === 'todo' ? 'bg-blue-50' : ''}`}
-          >
-            设为待办
-          </button>
-          <button
-            onClick={() => handleStatusChange(contextMenu.task.id, 'in_progress')}
-            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${contextMenu.task.status === 'in_progress' ? 'bg-blue-50' : ''}`}
-          >
-            设为进行中
-          </button>
-          <button
-            onClick={() => handleStatusChange(contextMenu.task.id, 'done')}
-            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${contextMenu.task.status === 'done' ? 'bg-blue-50' : ''}`}
-          >
-            设为已完成
-          </button>
-          <button
-            onClick={() => handleStatusChange(contextMenu.task.id, 'stuck')}
-            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${contextMenu.task.status === 'stuck' ? 'bg-blue-50' : ''}`}
-          >
-            设为阻塞
-          </button>
+          {contextMenuStatuses.map((status) => (
+            <button
+              key={status.value}
+              onClick={() => handleStatusChange(contextMenu.task.id, status.value)}
+              className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${contextMenu.task.status === status.value ? 'bg-blue-50' : ''}`}
+            >
+              设为{status.label}
+            </button>
+          ))}
           <div className="border-t my-1"></div>
           <button
             onClick={() => { onDelete(contextMenu.task.id); closeContextMenu(); }}

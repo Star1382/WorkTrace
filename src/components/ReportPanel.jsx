@@ -1,29 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { reportService } from '../services/reportService';
+import * as domain from '../shared/domain.js';
 
-const statusSymbols = {
-  done: '✓',
-  in_progress: '◐',
-  todo: '☐',
-  stuck: '⚠',
-  cancelled: '✗'
-};
-
-const statusLabels = {
-  done: '已完成',
-  in_progress: '进行中',
-  todo: '待办',
-  stuck: '阻塞',
-  cancelled: '已取消'
-};
-
-const quadrantLabels = {
-  0: '未分类',
-  1: '紧急重要',
-  2: '紧急不重要',
-  3: '重要不紧急',
-  4: '不重要不紧急'
-};
+const {
+  TASK_STATUS,
+  TASK_STATUS_LABELS,
+  TASK_STATUS_SYMBOLS,
+  PENDING_STATUSES,
+  QUADRANT_LABELS
+} = domain;
 
 const quadrantStyles = {
   0: 'border-gray-200 bg-gray-50',
@@ -52,7 +37,7 @@ function getSections(tasks) {
   return [1, 2, 3, 4, 0]
     .map((quadrant) => ({
       quadrant,
-      title: quadrantLabels[quadrant],
+      title: QUADRANT_LABELS[quadrant],
       tasks: tasks.filter((task) => Number(task.quadrant) === quadrant)
     }))
     .filter((section) => section.tasks.length > 0);
@@ -74,15 +59,15 @@ function ProgressBar({ done, total }) {
 }
 
 function TaskLine({ task }) {
-  const isMuted = task.status === 'done' || task.status === 'cancelled';
+  const isMuted = task.status === TASK_STATUS.DONE || task.status === TASK_STATUS.CANCELLED;
   return (
     <div className={`flex items-center gap-2 py-1 text-sm ${isMuted ? 'text-gray-500' : 'text-gray-800'}`}>
-      <span className="w-5 text-center">{statusSymbols[task.status] || '☐'}</span>
-      <span className={`flex-1 min-w-0 truncate ${task.status === 'done' ? 'line-through' : ''}`}>
+      <span className="w-5 text-center">{TASK_STATUS_SYMBOLS[task.status] || '☐'}</span>
+      <span className={`flex-1 min-w-0 truncate ${task.status === TASK_STATUS.DONE ? 'line-through' : ''}`}>
         {task.title}
       </span>
-      {task.status !== 'done' && task.status !== 'todo' && (
-        <span className="text-xs text-gray-500">{statusLabels[task.status]}</span>
+      {task.status !== TASK_STATUS.DONE && task.status !== TASK_STATUS.TODO && (
+        <span className="text-xs text-gray-500">{TASK_STATUS_LABELS[task.status]}</span>
       )}
       <span className="text-xs text-gray-500">{formatShortDate(task.due_date)}</span>
     </div>
@@ -121,7 +106,7 @@ function ReportPanel({ type, date, refreshKey }) {
 
   const sections = useMemo(() => getSections(report?.tasks || []), [report]);
   const pendingTasks = useMemo(
-    () => (report?.tasks || []).filter((task) => ['todo', 'in_progress', 'stuck'].includes(task.status)),
+    () => (report?.tasks || []).filter((task) => PENDING_STATUSES.includes(task.status)),
     [report]
   );
 

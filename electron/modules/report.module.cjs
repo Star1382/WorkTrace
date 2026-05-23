@@ -1,28 +1,20 @@
 const fs = require('fs');
 const { clipboard, dialog } = require('electron');
+const {
+  TASK_STATUS,
+  TASK_STATUS_LABELS,
+  TASK_STATUS_SYMBOLS,
+  PENDING_STATUSES,
+  QUADRANT_LABELS
+} = require('../../shared/domain.cjs');
 
-const STATUS_ORDER = ['done', 'in_progress', 'todo', 'stuck', 'cancelled'];
-const STATUS_LABELS = {
-  done: '已完成',
-  in_progress: '进行中',
-  todo: '待办',
-  stuck: '阻塞',
-  cancelled: '已取消'
-};
-const STATUS_SYMBOLS = {
-  done: '✓',
-  in_progress: '◐',
-  todo: '☐',
-  stuck: '⚠',
-  cancelled: '✗'
-};
-const QUADRANT_LABELS = {
-  0: '未分类',
-  1: '紧急重要',
-  2: '紧急不重要',
-  3: '重要不紧急',
-  4: '不重要不紧急'
-};
+const STATUS_ORDER = [
+  TASK_STATUS.DONE,
+  TASK_STATUS.IN_PROGRESS,
+  TASK_STATUS.TODO,
+  TASK_STATUS.STUCK,
+  TASK_STATUS.CANCELLED
+];
 
 function pad(value) {
   return String(value).padStart(2, '0');
@@ -137,7 +129,7 @@ function buildMonthlyTrend(tasks, start, end) {
     trend.push({
       week: `${cursor.getMonth() + 1}.${cursor.getDate()}-${weekEnd.getMonth() + 1}.${weekEnd.getDate()}`,
       total: weekTasks.length,
-      done: weekTasks.filter(task => task.status === 'done').length
+      done: weekTasks.filter(task => task.status === TASK_STATUS.DONE).length
     });
 
     cursor.setDate(weekEnd.getDate() + 1);
@@ -170,10 +162,10 @@ function getQuadrantSections(tasks) {
 }
 
 function renderTaskLine(task) {
-  const symbol = STATUS_SYMBOLS[task.status] || '☐';
+  const symbol = TASK_STATUS_SYMBOLS[task.status] || '☐';
   const dateText = formatShortDate(task.due_date);
-  const statusText = task.status && task.status !== 'done' && task.status !== 'todo'
-    ? `（${STATUS_LABELS[task.status] || task.status}）`
+  const statusText = task.status && task.status !== TASK_STATUS.DONE && task.status !== TASK_STATUS.TODO
+    ? `（${TASK_STATUS_LABELS[task.status] || task.status}）`
     : '';
   return `${symbol} ${task.title}${dateText ? ` ${dateText}` : ''}${statusText}`;
 }
@@ -204,7 +196,7 @@ function renderReportText(type, report) {
     lines.push('');
   });
 
-  const pending = report.tasks.filter(task => ['todo', 'in_progress', 'stuck'].includes(task.status));
+  const pending = report.tasks.filter(task => PENDING_STATUSES.includes(task.status));
   if (pending.length) {
     lines.push('待推进事项：');
     pending.forEach(task => lines.push(renderTaskLine(task)));
