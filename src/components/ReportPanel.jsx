@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { reportService } from '../services/reportService';
 import * as domain from '../shared/domain.js';
+import { formatShortDate } from '../shared/date.js';
 
 const {
   TASK_STATUS,
@@ -17,14 +18,6 @@ const quadrantStyles = {
   3: 'border-blue-200 bg-blue-50',
   4: 'border-green-200 bg-green-50'
 };
-
-function formatShortDate(value) {
-  if (!value) {
-    return '';
-  }
-  const [, month, day] = String(value).match(/^\d{4}-(\d{2})-(\d{2})/) || [];
-  return month && day ? `${Number(month)}.${Number(day)}` : '';
-}
 
 function formatPeriod(period) {
   if (!period) {

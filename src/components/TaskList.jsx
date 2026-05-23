@@ -7,14 +7,20 @@ function TaskList({
   tasks,
   highlightedTaskId,
   selectedTaskId,
+  quickAddDraft,
+  quickEditTaskId,
   onSelectTask,
   onToggleStatus,
   onChangeStatus,
   onEdit,
   onDelete,
-  onAdd
+  onAdd,
+  onQuickAdd
 }) {
+  const [quickText, setQuickText] = useState('');
+  const [quickMessage, setQuickMessage] = useState('');
   const [contextMenu, setContextMenu] = useState(null);
+  const quickInputRef = useRef(null);
   const taskRefs = useRef({});
 
   const quadrantColors = {
@@ -55,6 +61,36 @@ function TaskList({
     closeContextMenu();
   };
 
+  const handleQuickAdd = async (event) => {
+    if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
+      return;
+    }
+    event.preventDefault();
+    const text = quickText.trim();
+    if (!text) {
+      return;
+    }
+
+    const result = await onQuickAdd(text);
+    if (result.success) {
+      setQuickText('');
+      setQuickMessage('');
+      return;
+    }
+    setQuickMessage(result.error || '快速创建失败');
+  };
+
+  useEffect(() => {
+    if (!quickAddDraft) {
+      return;
+    }
+    setQuickText(quickAddDraft.text || '');
+    window.setTimeout(() => {
+      quickInputRef.current?.focus();
+      quickInputRef.current?.setSelectionRange(quickInputRef.current.value.length, quickInputRef.current.value.length);
+    }, 0);
+  }, [quickAddDraft]);
+
   useEffect(() => {
     const handleClick = () => closeContextMenu();
     window.addEventListener('click', handleClick);
@@ -71,8 +107,30 @@ function TaskList({
     (status) => status.value !== TASK_STATUS.CANCELLED
   );
 
+  const handleTaskClick = (task) => {
+    onSelectTask(task.id);
+    if (task.id === quickEditTaskId) {
+      onEdit(task);
+    }
+  };
+
   return (
     <div className="space-y-4">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+        <input
+          ref={quickInputRef}
+          value={quickText}
+          onChange={(event) => {
+            setQuickText(event.target.value);
+            setQuickMessage('');
+          }}
+          onKeyDown={handleQuickAdd}
+          placeholder="输入任务，回车创建"
+          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+        {quickMessage && <div className="mt-2 text-xs text-red-600">{quickMessage}</div>}
+      </div>
+
       {tasks.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
           <p className="text-lg">暂无任务</p>
@@ -83,7 +141,7 @@ function TaskList({
           <div
             key={task.id}
             ref={(node) => { taskRefs.current[task.id] = node; }}
-            onClick={() => onSelectTask(task.id)}
+            onClick={() => handleTaskClick(task)}
             className={`bg-white rounded-lg shadow-sm p-4 flex items-start gap-3 hover:shadow-md transition-shadow cursor-pointer ${
               task.status === TASK_STATUS.DONE ? 'opacity-70' : ''
             } ${

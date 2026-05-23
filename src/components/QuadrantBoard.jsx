@@ -15,8 +15,9 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { taskService } from '../services/taskService';
 import * as domain from '../shared/domain.js';
+import { formatShortDate } from '../shared/date.js';
 
-const { TASK_STATUS, TASK_STATUS_LABELS, QUADRANT_LABELS, BOARD_QUADRANTS } = domain;
+const { TASK_STATUS, TASK_STATUS_LABELS, BOARD_QUADRANTS } = domain;
 
 const statusStyles = {
   todo: 'bg-gray-100 text-gray-600',
@@ -38,16 +39,7 @@ const quadrants = BOARD_QUADRANTS.map((quadrant) => ({
   ...quadrantStyles[quadrant.id]
 }));
 
-function formatShortDate(value) {
-  if (!value) {
-    return '无日期';
-  }
-
-  const [, month, day] = String(value).match(/^\d{4}-(\d{2})-(\d{2})/) || [];
-  return month && day ? `${Number(month)}.${Number(day)}` : value;
-}
-
-function BoardColumn({ quadrant, tasks, children }) {
+function BoardColumn({ quadrant, tasks, selected, children }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `quadrant-${quadrant.id}`,
     data: { quadrant: quadrant.id }
@@ -58,6 +50,8 @@ function BoardColumn({ quadrant, tasks, children }) {
       ref={setNodeRef}
       className={`min-h-[260px] rounded-lg border p-4 transition-colors ${quadrant.color} ${
         isOver ? 'ring-2 ring-blue-400 ring-offset-2' : ''
+      } ${
+        selected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
       }`}
     >
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -143,7 +137,7 @@ function BoardCard({ task, onEdit, onToggleStatus }) {
   );
 }
 
-function QuadrantBoard({ refreshKey, onTaskMoved, onEditTask, onToggleStatus }) {
+function QuadrantBoard({ refreshKey, selectedQuadrantId, onSelectQuadrant, onTaskMoved, onEditTask, onToggleStatus }) {
   const [tasks, setTasks] = useState([]);
   const [message, setMessage] = useState('');
   const sensors = useSensors(
@@ -153,7 +147,7 @@ function QuadrantBoard({ refreshKey, onTaskMoved, onEditTask, onToggleStatus }) 
   );
 
   const loadTasks = async () => {
-    const result = await taskService.getByQuadrant({ excludeDone: true });
+    const result = await taskService.getByQuadrant();
     if (result.success) {
       setTasks(result.data);
       setMessage('');
@@ -172,11 +166,6 @@ function QuadrantBoard({ refreshKey, onTaskMoved, onEditTask, onToggleStatus }) 
       return acc;
     }, {});
   }, [tasks]);
-
-  const uncategorized = useMemo(
-    () => tasks.filter((task) => ![1, 2, 3, 4].includes(Number(task.quadrant))),
-    [tasks]
-  );
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;
@@ -209,20 +198,35 @@ function QuadrantBoard({ refreshKey, onTaskMoved, onEditTask, onToggleStatus }) 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">四象限看板</h2>
-          <p className="text-sm text-gray-500 mt-1">拖动任务卡片调整象限，已完成任务默认不显示。</p>
+          <p className="text-sm text-gray-500 mt-1">2×2展示所有已设置四象限的任务，卡片显示标题和状态。</p>
         </div>
-        <button
-          onClick={loadTasks}
-          className="px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-        >
-          刷新
-        </button>
+        <div className="flex items-center gap-2">
+          {selectedQuadrantId && (
+            <button
+              onClick={() => onSelectQuadrant(null)}
+              className="px-3 py-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100"
+            >
+              取消定位
+            </button>
+          )}
+          <button
+            onClick={loadTasks}
+            className="px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            刷新
+          </button>
+        </div>
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {quadrants.map((quadrant) => (
-            <BoardColumn key={quadrant.id} quadrant={quadrant} tasks={groupedTasks[quadrant.id] || []}>
+            <BoardColumn
+              key={quadrant.id}
+              quadrant={quadrant}
+              tasks={groupedTasks[quadrant.id] || []}
+              selected={Number(selectedQuadrantId) === quadrant.id}
+            >
               {(groupedTasks[quadrant.id] || []).map((task) => (
                 <BoardCard
                   key={task.id}
@@ -240,20 +244,6 @@ function QuadrantBoard({ refreshKey, onTaskMoved, onEditTask, onToggleStatus }) 
           ))}
         </div>
       </DndContext>
-
-      {uncategorized.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <h3 className="font-semibold text-gray-800 mb-3">{QUADRANT_LABELS[0]}任务</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {uncategorized.map((task) => (
-              <div key={task.id} className="border border-gray-200 rounded-lg p-3">
-                <div className="font-medium text-sm text-gray-900">{task.title}</div>
-                <div className="text-xs text-gray-500 mt-1">{TASK_STATUS_LABELS[task.status] || task.status} · {formatShortDate(task.due_date)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {message && <div className="text-sm text-gray-600">{message}</div>}
     </div>

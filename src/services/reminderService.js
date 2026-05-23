@@ -1,6 +1,4 @@
-import { invoke } from './ipc';
-
 export const reminderService = {
-  check: () => invoke('reminder:check'),
-  setSnooze: (taskId, minutes) => invoke('reminder:setSnooze', taskId, minutes)
+  check: () => window.electronAPI.reminder.check(),
+  setSnooze: (taskId, minutes) => window.electronAPI.reminder.setSnooze(taskId, minutes)
 };

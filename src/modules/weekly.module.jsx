@@ -1,11 +1,15 @@
 import React from 'react';
-import WeeklyReport from '../components/WeeklyReport';
+import WeekView from '../components/WeekView';
 
 export const weeklyModule = {
-  key: 'weekly',
-  label: '周报',
-  order: 30,
+  key: 'week',
+  label: '本周',
+  order: 20,
   render: (context) => (
-    <WeeklyReport date={context.selectedDateValue} refreshKey={context.refreshKey} />
+    <WeekView
+      date={context.selectedDateValue}
+      refreshKey={context.refreshKey}
+      onDateQuickAdd={context.prepareQuickAddForDate}
+    />
   )
 };

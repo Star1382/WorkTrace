@@ -6,37 +6,29 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './components/Toast';
 import { taskService } from './services/taskService';
 import { statsService } from './services/statsService';
-import { defaultModuleKey, featureModules } from './modules';
+import { defaultModuleKey, featureModules, sidebarWidgets } from './modules';
 import * as domain from './shared/domain.js';
+import { formatDate, parseLocalDate } from './shared/date.js';
 
-const { TASK_STATUS, QUADRANT_LABELS } = domain;
+const { TASK_STATUS } = domain;
 
 function App() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeView, setActiveView] = useState(defaultModuleKey);
+  const [activeNavChildren, setActiveNavChildren] = useState({});
+  const [openNavMenuKey, setOpenNavMenuKey] = useState(null);
+  const [moduleParamsByKey, setModuleParamsByKey] = useState({});
   const [tasks, setTasks] = useState([]);
-  const [quadrantStats, setQuadrantStats] = useState({ 1: 0, 2: 0, 3: 0, 4: 0 });
   const [weekStats, setWeekStats] = useState({ total: 0, done: 0 });
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [highlightedTaskId, setHighlightedTaskId] = useState(null);
+  const [quickAddDraft, setQuickAddDraft] = useState(null);
+  const [quickEditTaskId, setQuickEditTaskId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const formatDate = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const parseLocalDate = (value) => {
-    const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (!match) {
-      return new Date();
-    }
-    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-  };
+  const selectedDateValue = formatDate(selectedDate);
 
   const loadTasks = useCallback(async () => {
     const result = await taskService.getByDate(formatDate(selectedDate));
@@ -46,10 +38,6 @@ function App() {
   }, [selectedDate]);
 
   const loadStats = useCallback(async () => {
-    const quadResult = await statsService.getQuadrant();
-    if (quadResult.success) {
-      setQuadrantStats(quadResult.data);
-    }
     const weekResult = await statsService.getWeek();
     if (weekResult.success) {
       setWeekStats(weekResult.data);
@@ -67,6 +55,25 @@ function App() {
     }
   }, [tasks, selectedTaskId]);
 
+  const setModuleParams = (moduleKey, params) => {
+    setModuleParamsByKey((current) => ({
+      ...current,
+      [moduleKey]: {
+        ...(current[moduleKey] || {}),
+        ...(typeof params === 'function' ? params(current[moduleKey] || {}) : params)
+      }
+    }));
+  };
+
+  const openModule = (moduleKey, params = {}) => {
+    setOpenNavMenuKey(null);
+    setActiveView(moduleKey);
+    setModuleParamsByKey((current) => ({
+      ...current,
+      [moduleKey]: params
+    }));
+  };
+
   const handleAddTask = () => {
     setEditingTask(null);
     setShowModal(true);
@@ -83,14 +90,34 @@ function App() {
     setRefreshKey((key) => key + 1);
   };
 
+  const buildDatePrefix = (dateValue) => {
+    const date = parseLocalDate(dateValue);
+    return `${date.getMonth() + 1}月${date.getDate()}日 `;
+  };
+
+  const prepareQuickAddForDate = (dateValue) => {
+    setSelectedDate(parseLocalDate(dateValue));
+    setQuickAddDraft({ text: buildDatePrefix(dateValue), token: Date.now() });
+    openModule('today');
+  };
+
   const handleSaveTask = async (taskData) => {
     if (editingTask) {
       await taskService.update({ ...taskData, id: editingTask.id });
     } else {
-      await taskService.add({ ...taskData, due_date: taskData.due_date || formatDate(selectedDate) });
+      await taskService.add({ ...taskData, due_date: taskData.due_date || selectedDateValue });
     }
     setShowModal(false);
     refreshAll();
+  };
+
+  const handleQuickAdd = async (text) => {
+    const result = await taskService.quickAdd(text);
+    if (result.success) {
+      setQuickEditTaskId(result.data?.id || null);
+      refreshAll();
+    }
+    return result;
   };
 
   const handleToggleStatus = async (taskId, currentStatus) => {
@@ -119,24 +146,37 @@ function App() {
     weekday: 'long'
   });
 
-  const tabs = featureModules.map(({ key, label }) => ({ key, label }));
+  const handleTabClick = (module) => {
+    if (module.navChildren?.length) {
+      setOpenNavMenuKey((key) => key === module.key ? null : module.key);
+      return;
+    }
+    openModule(module.key, {});
+  };
+
+  const handleNavChildClick = (module, child) => {
+    setActiveNavChildren((current) => ({ ...current, [module.key]: child.key }));
+    openModule(module.key, {});
+  };
 
   useEffect(() => {
-    if (!window.electronAPI?.on) {
+    if (!window.electronAPI?.reminder?.onFocusTask) {
       return undefined;
     }
 
-    return window.electronAPI.on('reminder:focusTask', (task) => {
+    return window.electronAPI.reminder.onFocusTask((task) => {
       if (task?.due_date) {
         setSelectedDate(parseLocalDate(task.due_date));
       }
-      setActiveView('today');
+      openModule('today');
       setSelectedTaskId(task.id);
       setHighlightedTaskId(task.id);
       setRefreshKey((key) => key + 1);
       window.setTimeout(() => setHighlightedTaskId(null), 8000);
     });
   }, []);
+
+  const tabs = featureModules.map(({ key, label }) => ({ key, label }));
 
   useEffect(() => {
     const isTypingTarget = (target) => {
@@ -149,7 +189,7 @@ function App() {
         const index = ['1', '2', '3', '4'].indexOf(event.key);
         if (index >= 0 && tabs[index]) {
           event.preventDefault();
-          setActiveView(tabs[index].key);
+          openModule(tabs[index].key);
           return;
         }
 
@@ -164,6 +204,8 @@ function App() {
         if (showModal) {
           event.preventDefault();
           setShowModal(false);
+        } else {
+          setOpenNavMenuKey(null);
         }
         return;
       }
@@ -190,10 +232,10 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showModal, selectedTaskId, tasks]);
+  }, [showModal, selectedTaskId, tasks, tabs]);
 
-  const selectedDateValue = formatDate(selectedDate);
   const activeModule = featureModules.find((module) => module.key === activeView) || featureModules[0];
+  const activeNavChildKey = activeNavChildren[activeModule.key] || activeModule.defaultNavChildKey;
   const moduleContext = {
     tasks,
     highlightedTaskId,
@@ -201,117 +243,116 @@ function App() {
     selectedDate,
     selectedDateValue,
     refreshKey,
+    quickAddDraft,
+    quickEditTaskId,
+    moduleParams: moduleParamsByKey[activeModule.key] || {},
+    activeNavChildKey,
+    openModule,
+    setModuleParams,
     setSelectedDate,
     setSelectedTaskId,
     handleAddTask,
     handleEditTask,
     handleSaveTask,
+    handleQuickAdd,
+    prepareQuickAddForDate,
     handleToggleStatus,
     handleChangeStatus,
     handleDeleteTask,
     refreshAll
+  };
+  const sidebarContext = {
+    ...moduleContext,
+    moduleParamsByKey
   };
 
   return (
     <ErrorBoundary>
       <ToastProvider>
         <div className="h-screen flex flex-col bg-gray-100">
-      <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
-        <h1 className="text-lg font-bold">WorkTrace</h1>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-64 bg-white border-r border-gray-200 flex flex-col p-4">
-          <Calendar selectedDate={selectedDate} onSelectDate={setSelectedDate} />
-          <div className="mt-6 flex-1">
-            <h3 className="text-sm font-semibold text-gray-600 mb-3">四象限统计</h3>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center">
-                  <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
-                  <span>{QUADRANT_LABELS[1]}</span>
-                </div>
-                <span className="font-medium">{quadrantStats[1]}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center">
-                  <span className="w-3 h-3 rounded-full bg-amber-500 mr-2"></span>
-                  <span>{QUADRANT_LABELS[2]}</span>
-                </div>
-                <span className="font-medium">{quadrantStats[2]}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center">
-                  <span className="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
-                  <span>{QUADRANT_LABELS[3]}</span>
-                </div>
-                <span className="font-medium">{quadrantStats[3]}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center">
-                  <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
-                  <span>{QUADRANT_LABELS[4]}</span>
-                </div>
-                <span className="font-medium">{quadrantStats[4]}</span>
-              </div>
-            </div>
+          <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
+            <h1 className="text-lg font-bold">WorkTrace</h1>
           </div>
-        </div>
 
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="bg-white border-b border-gray-200 px-6 py-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-xl font-medium text-gray-800">
-                {selectedDateText}
-              </h2>
-              <button
-                onClick={handleAddTask}
-                className="px-3 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-              >
-                + 添加任务
-              </button>
-            </div>
-            <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveView(tab.key)}
-                  className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
-                    activeView === tab.key
-                      ? 'bg-white text-blue-700 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  {tab.label}
-                </button>
+          <div className="flex flex-1 overflow-hidden">
+            <div className="w-64 bg-white border-r border-gray-200 flex flex-col p-4">
+              <Calendar selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+              {sidebarWidgets.map((widget) => (
+                <React.Fragment key={`${widget.moduleKey}:${widget.key}`}>
+                  {widget.render(sidebarContext)}
+                </React.Fragment>
               ))}
             </div>
-          </div>
 
-          <div className="flex-1 overflow-auto p-6">
-            {activeModule?.render(moduleContext)}
-          </div>
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="bg-white border-b border-gray-200 px-6 py-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-xl font-medium text-gray-800">
+                    {selectedDateText}
+                  </h2>
+                  <button
+                    onClick={handleAddTask}
+                    className="px-3 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                  >
+                    + 添加任务
+                  </button>
+                </div>
+                <div className="relative inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+                  {featureModules.map((module) => (
+                    <div key={module.key} className="relative">
+                      <button
+                        onClick={() => handleTabClick(module)}
+                        className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
+                          activeView === module.key
+                            ? 'bg-white text-blue-700 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        {module.label}
+                      </button>
+                      {openNavMenuKey === module.key && module.navChildren?.length > 0 && (
+                        <div className="absolute left-0 top-full mt-2 w-36 rounded-lg border border-gray-200 bg-white p-1 shadow-lg z-20">
+                          {module.navChildren.map((child) => (
+                            <button
+                              key={child.key}
+                              type="button"
+                              onClick={() => handleNavChildClick(module, child)}
+                              className="w-full rounded-md px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              {child.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-          <div className="bg-white border-t border-gray-200 px-6 py-3">
-            <div className="text-sm text-gray-600">
-              本周统计：完成{weekStats.done}/{weekStats.total}
+              <div className="flex-1 overflow-auto p-6">
+                {activeModule?.render(moduleContext)}
+              </div>
+
+              <div className="bg-white border-t border-gray-200 px-6 py-3">
+                <div className="text-sm text-gray-600">
+                  本周统计：完成{weekStats.done}/{weekStats.total}
+                </div>
+              </div>
             </div>
           </div>
+
+          <StatusBar />
+
+          {showModal && (
+            <TaskModal
+              task={editingTask}
+              defaultDueDate={selectedDateValue}
+              onSave={handleSaveTask}
+              onClose={() => setShowModal(false)}
+            />
+          )}
         </div>
-      </div>
-
-      <StatusBar />
-
-      {showModal && (
-        <TaskModal
-          task={editingTask}
-          defaultDueDate={formatDate(selectedDate)}
-          onSave={handleSaveTask}
-          onClose={() => setShowModal(false)}
-        />
-      )}
-    </div>
-    </ToastProvider>
+      </ToastProvider>
     </ErrorBoundary>
   );
 }

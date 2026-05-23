@@ -1,5 +1,6 @@
 const { Notification } = require('electron');
-const { ACTIVE_STATUSES } = require('../../shared/domain.cjs');
+const { formatDateTime } = require('../../shared/date.cjs');
+const { createTaskRepository } = require('../repositories/task.repository.cjs');
 
 const CHECK_INTERVAL_MS = 60 * 1000;
 const START_DELAY_MS = 5 * 1000;
@@ -16,27 +17,12 @@ function parseReminderTime(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function getDueReminderTasks(db) {
+function getDueReminderTasks(taskRepository) {
   const now = new Date();
-  return db.prepare(`
-    SELECT id, title, description, quadrant, status, due_date, remind_at, created_at, updated_at, completed_at
-    FROM tasks
-    WHERE remind_at IS NOT NULL
-      AND remind_at != ''
-      AND status IN (${ACTIVE_STATUSES.map(() => '?').join(', ')})
-    ORDER BY remind_at ASC
-  `).all(...ACTIVE_STATUSES).filter((task) => {
+  return taskRepository.getDueReminderCandidates().filter((task) => {
     const remindAt = parseReminderTime(task.remind_at);
     return remindAt && remindAt <= now;
   });
-}
-
-function formatSqlDateTime(date) {
-  const pad = (value) => String(value).padStart(2, '0');
-  return [
-    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
-    `${pad(date.getHours())}:${pad(date.getMinutes())}:00`
-  ].join(' ');
 }
 
 function focusTask(context, task) {
@@ -57,6 +43,7 @@ module.exports = {
   name: 'reminder',
 
   registerHandlers(ipcMain, db, context = {}) {
+    const tasks = createTaskRepository(db);
     const notifiedKeys = new Map();
     
     const cleanupOldKeys = () => {
@@ -91,7 +78,7 @@ module.exports = {
 
     const checkAndNotify = () => {
       try {
-        getDueReminderTasks(db).forEach(showNotification);
+        getDueReminderTasks(tasks).forEach(showNotification);
       } catch (error) {
         console.error('[Reminder] check failed:', error);
       }
@@ -99,7 +86,7 @@ module.exports = {
 
     ipcMain.handle('reminder:check', async () => {
       try {
-        return { success: true, data: getDueReminderTasks(db) };
+        return { success: true, data: getDueReminderTasks(tasks) };
       } catch (error) {
         return { success: false, error: error.message };
       }
@@ -109,11 +96,7 @@ module.exports = {
       try {
         const delayMinutes = Number.isFinite(Number(minutes)) ? Number(minutes) : 10;
         const nextReminder = new Date(Date.now() + delayMinutes * 60 * 1000);
-        db.prepare(`
-          UPDATE tasks
-          SET remind_at = ?, updated_at = CURRENT_TIMESTAMP
-          WHERE id = ?
-        `).run(formatSqlDateTime(nextReminder), taskId);
+        tasks.setReminder(taskId, formatDateTime(nextReminder));
         return { success: true };
       } catch (error) {
         return { success: false, error: error.message };

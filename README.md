@@ -6,9 +6,10 @@
 
 - 📅 **月历视图**：左侧月历，点击日期切换查看任务
 - ✅ **任务管理**：添加、编辑、删除任务
+- ⚡ **快速添加**：任务列表顶部输入一句话，回车创建任务
 - 🎯 **四象限分类**：紧急重要/紧急不重要/重要不紧急/不重要不紧急
-- 📊 **统计功能**：四象限统计、本周完成统计
-- 📝 **周报/月报**：按周期生成任务汇总，支持复制到剪贴板和导出文本文件
+- 📊 **视图体系**：今日 / 本周 / 本月 / 四象限 / 报表
+- 📝 **周报/月报**：从报表入口选择周报或月报，支持复制到剪贴板和导出文本文件
 - 💾 **本地存储**：SQLite数据库，数据安全
 
 ## 技术栈
@@ -25,13 +26,17 @@
 worktrace/
 ├── electron/          # Electron 主进程
 │   ├── main.cjs       # 主进程入口
-│   ├── preload.cjs    # 预加载脚本
+│   ├── preload.cjs    # 白名单能力接口
 │   ├── database.cjs   # SQLite 数据库
-│   └── modules/       # IPC 业务模块：task/stats/report
+│   ├── repositories/  # 数据访问层：task.repository.cjs
+│   └── modules/       # IPC 业务模块：task/stats/report/reminder
+├── shared/            # 主进程共享定义：domain/date
 ├── src/               # React 前端
 │   ├── components/    # React 组件
-│   ├── services/      # 前端 IPC 服务封装
-│   ├── App.jsx        # 主应用
+│   ├── modules/       # 前端功能模块声明
+│   ├── services/      # 前端能力服务封装
+│   ├── shared/        # 渲染进程共享定义：domain/date
+│   ├── App.jsx        # 主应用壳层
 │   ├── main.jsx       # 入口文件
 │   └── index.css      # 样式
 ├── index.html
@@ -79,20 +84,23 @@ npm.cmd run build
 ## 快捷操作
 
 - 点击任务左侧复选框：切换完成状态
+- 在任务列表顶部输入框输入一句话，按 `Enter`：快速创建任务
+- 快速输入支持：`今天`、`明天`、`后天`、`周X/星期X`、`X月X日`、`[紧急]`、`[重要]`
+- 在本周/本月视图点击某一天：回到今日视图并预填该日期的快速添加文本
 - 右键点击任务：显示上下文菜单
 - 点击任务上的编辑按钮：修改任务
 - 点击任务上的删除按钮：删除任务
 - `Ctrl+N`：新建任务
-- `Ctrl+1~4`：切换今日 / 看板 / 周报 / 月报
+- `Ctrl+1~4`：切换今日 / 本周 / 本月 / 四象限
 - `Delete`：删除选中任务
 - `Enter`：编辑选中任务
 - `Esc`：关闭弹窗
 
-## 项目交接记录：SPEC 阶段实现
+## 项目交接记录：v0.4
 
-交接时间：2026-05-23
+交接时间：2026-05-24
 
-当前状态：模块 1 MVP、Phase 1、Phase 2、Phase 3、Phase 4 和 Phase 5 中的快捷键/右键菜单边界已完成。模块 5 知识库接口在 SPEC 中标注为远期，当前未开发。
+当前状态：模块 1 MVP、Phase 1、Phase 2、Phase 3、Phase 4、Phase 5 中的快捷键/右键菜单边界已完成；v0.4 的视图体系调整、低耦合重构和快速添加已完成。模块 5 知识库接口在 SPEC 中标注为远期，当前未开发。
 
 ### 已完成内容
 
@@ -148,7 +156,29 @@ npm.cmd run build
    - 已修复右键菜单跑出屏幕的问题。
    - 已修复右键菜单状态流转逻辑。
 
-7. 构建配置修复
+7. v0.4 视图体系和低耦合重构
+   - Tab 调整为：今日 / 本周 / 本月 / 四象限 / 报表。
+   - 报表入口通过模块 `navChildren` 提供周报/月报选择。
+   - 四象限侧栏预览通过模块 `sidebarWidgets` 贡献，不再写死在 `App.jsx`。
+   - 新增 `electron/repositories/task.repository.cjs`，集中管理 `tasks` 表 SQL。
+   - 新增 `src/shared/date.js` 和 `shared/date.cjs`，统一日期解析、格式化和周/月范围规则。
+   - `electron/preload.cjs` 已收紧为白名单能力接口，不再暴露通用 `invoke(channel)`。
+
+8. 快速添加任务
+   - 新增 `task:quickAdd` IPC。
+   - `TaskList.jsx` 顶部新增常驻快速输入框。
+   - 支持一句话创建任务：
+     - `今天`
+     - `明天`
+     - `后天`
+     - `周X/星期X`
+     - `X月X日`
+     - `[紧急]`
+     - `[重要]`
+   - 本周/本月视图点击日期格，会回到今日视图并预填该日期。
+   - 快速创建后的任务可点击进入编辑弹窗继续补充信息。
+
+9. 构建配置修复
    - `tailwind.config.js` 已补充扫描路径。
    - 生产构建不会再因为 `content: []` 丢失 Tailwind 样式。
 
@@ -183,10 +213,19 @@ npm.cmd run build
    - 构建通过。
 
 3. 模块加载
-   - 已执行 `node -e "require('./electron/modules/report.module.cjs'); require('./electron/modules/reminder.module.cjs'); console.log('modules ok')"`。
-   - 报表模块和提醒模块可正常加载。
+   - 已执行 `node -e "require('./shared/date.cjs'); require('./electron/repositories/task.repository.cjs'); require('./electron/modules/task.module.cjs'); require('./electron/modules/stats.module.cjs'); require('./electron/modules/report.module.cjs'); require('./electron/modules/reminder.module.cjs'); console.log('modules ok')"`。
+   - 共享日期工具、任务 repository、任务/统计/报表/提醒模块可正常加载。
 
-4. Electron 开发启动
+4. v0.4 接口验证
+   - 已用内存 SQLite 验证 `task:getByWeek`、`task:getByMonth`、`task:getByQuadrant`、`stats:getQuadrant`、`report:weekly`。
+   - 已验证 `task:quickAdd` 可解析日期关键词和 `[紧急]` / `[重要]`。
+
+5. 浏览器冒烟
+   - 已验证快速输入框显示正常。
+   - 已验证本周/本月日期点击可预填快速输入框。
+   - 已验证报表子菜单和四象限侧栏跳转可用。
+
+6. Electron 开发启动
    - 已执行 `npm.cmd start`。
    - 如遇 `better-sqlite3` ABI 不匹配，执行：
 

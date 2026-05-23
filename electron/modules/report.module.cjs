@@ -7,6 +7,14 @@ const {
   PENDING_STATUSES,
   QUADRANT_LABELS
 } = require('../../shared/domain.cjs');
+const {
+  formatDate,
+  formatShortDate,
+  formatPeriodDate,
+  getWeekRange,
+  getMonthRange
+} = require('../../shared/date.cjs');
+const { createTaskRepository } = require('../repositories/task.repository.cjs');
 
 const STATUS_ORDER = [
   TASK_STATUS.DONE,
@@ -15,68 +23,6 @@ const STATUS_ORDER = [
   TASK_STATUS.STUCK,
   TASK_STATUS.CANCELLED
 ];
-
-function pad(value) {
-  return String(value).padStart(2, '0');
-}
-
-function parseDate(value) {
-  if (!value) {
-    return new Date();
-  }
-
-  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (match) {
-    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-  }
-
-  return new Date(value);
-}
-
-function formatDate(date) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-function formatShortDate(value) {
-  if (!value) {
-    return '';
-  }
-  const date = parseDate(value);
-  return `${date.getMonth() + 1}.${date.getDate()}`;
-}
-
-function formatPeriodDate(value) {
-  const date = parseDate(value);
-  return `${date.getFullYear()}.${date.getMonth() + 1}.${date.getDate()}`;
-}
-
-function getWeekRange(value) {
-  const date = parseDate(value);
-  const day = date.getDay();
-  const offset = day === 0 ? -6 : 1 - day;
-  const start = new Date(date);
-  start.setDate(date.getDate() + offset);
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  return { start, end };
-}
-
-function getMonthRange(value) {
-  const date = parseDate(value);
-  return {
-    start: new Date(date.getFullYear(), date.getMonth(), 1),
-    end: new Date(date.getFullYear(), date.getMonth() + 1, 0)
-  };
-}
-
-function getTasksInRange(db, start, end) {
-  return db.prepare(`
-    SELECT id, title, description, quadrant, status, due_date, remind_at, created_at, updated_at, completed_at
-    FROM tasks
-    WHERE due_date BETWEEN ? AND ?
-    ORDER BY due_date ASC, created_at ASC
-  `).all(formatDate(start), formatDate(end));
-}
 
 function countByStatus(tasks) {
   return STATUS_ORDER.reduce((acc, status) => {
@@ -107,9 +53,9 @@ function buildBaseReport(tasks, start, end) {
   };
 }
 
-function buildWeeklyReport(db, date) {
-  const { start, end } = getWeekRange(date);
-  return buildBaseReport(getTasksInRange(db, start, end), start, end);
+function buildWeeklyReport(taskRepository, date) {
+  const { start, end, startValue, endValue } = getWeekRange(date);
+  return buildBaseReport(taskRepository.getInRange(startValue, endValue), start, end);
 }
 
 function buildMonthlyTrend(tasks, start, end) {
@@ -138,17 +84,17 @@ function buildMonthlyTrend(tasks, start, end) {
   return trend;
 }
 
-function buildMonthlyReport(db, date) {
-  const { start, end } = getMonthRange(date);
-  const tasks = getTasksInRange(db, start, end);
+function buildMonthlyReport(taskRepository, date) {
+  const { start, end, startValue, endValue } = getMonthRange(date);
+  const tasks = taskRepository.getInRange(startValue, endValue);
   return {
     ...buildBaseReport(tasks, start, end),
     weekly_trend: buildMonthlyTrend(tasks, start, end)
   };
 }
 
-function getReport(type, db, date) {
-  return type === 'monthly' ? buildMonthlyReport(db, date) : buildWeeklyReport(db, date);
+function getReport(type, taskRepository, date) {
+  return type === 'monthly' ? buildMonthlyReport(taskRepository, date) : buildWeeklyReport(taskRepository, date);
 }
 
 function getQuadrantSections(tasks) {
@@ -209,9 +155,11 @@ module.exports = {
   name: 'report',
 
   registerHandlers(ipcMain, db) {
+    const tasks = createTaskRepository(db);
+
     ipcMain.handle('report:weekly', async (event, params = {}) => {
       try {
-        return { success: true, data: buildWeeklyReport(db, params.date) };
+        return { success: true, data: buildWeeklyReport(tasks, params.date) };
       } catch (error) {
         return { success: false, error: error.message };
       }
@@ -219,7 +167,7 @@ module.exports = {
 
     ipcMain.handle('report:monthly', async (event, params = {}) => {
       try {
-        return { success: true, data: buildMonthlyReport(db, params.date) };
+        return { success: true, data: buildMonthlyReport(tasks, params.date) };
       } catch (error) {
         return { success: false, error: error.message };
       }
@@ -228,7 +176,7 @@ module.exports = {
     ipcMain.handle('report:exportText', async (event, params = {}) => {
       try {
         const type = params.type === 'monthly' ? 'monthly' : 'weekly';
-        const report = getReport(type, db, params.date);
+        const report = getReport(type, tasks, params.date);
         const filename = `${type === 'monthly' ? '月报' : '周报'}_${report.period.replace(' ~ ', '_')}.txt`;
         return {
           success: true,

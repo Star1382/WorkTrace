@@ -1,13 +1,11 @@
-/**
- * taskService.js - 任务相关 API
- */
-import { invoke } from './ipc';
-
 export const taskService = {
-  getByDate: (date) => invoke('task:getByDate', date),
-  getByQuadrant: (params = {}) => invoke('task:getByQuadrant', params),
-  add: (task) => invoke('task:add', task),
-  update: (task) => invoke('task:update', task),
-  toggleStatus: (id, status) => invoke('task:toggleStatus', id, status),
-  delete: (id) => invoke('task:delete', id)
+  getByDate: (date) => window.electronAPI.task.getByDate(date),
+  getByWeek: (params = {}) => window.electronAPI.task.getByWeek(params),
+  getByMonth: (params = {}) => window.electronAPI.task.getByMonth(params),
+  getByQuadrant: (params = {}) => window.electronAPI.task.getByQuadrant(params),
+  add: (task) => window.electronAPI.task.add(task),
+  quickAdd: (text) => window.electronAPI.task.quickAdd({ text }),
+  update: (task) => window.electronAPI.task.update(task),
+  toggleStatus: (id, status) => window.electronAPI.task.toggleStatus(id, status),
+  delete: (id) => window.electronAPI.task.delete(id)
 };

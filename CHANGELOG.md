@@ -2,6 +2,72 @@
 
 本文档记录 WorkTrace 的主要功能变更、修复和交付状态。
 
+## 2026-05-24 - v0.4 视图体系、低耦合重构与快速添加
+
+状态：已完成 v0.4 视图调整、模块边界下沉、后端 repository 抽取、preload 白名单收紧，并新增一句话快速创建任务。
+
+### Added
+
+- 新增快速创建任务 IPC：`task:quickAdd`。
+  - 接收 `{ text }`。
+  - 支持解析 `今天`、`明天`、`后天`、`周X/星期X`、`X月X日`。
+  - 支持解析 `[紧急]` 为 `quadrant=1`，`[重要]` 为 `quadrant=3`。
+  - 未识别日期时默认写入当天。
+- `TaskList.jsx` 顶部新增常驻快速输入框：
+  - placeholder：`输入任务，回车创建`。
+  - 回车创建成功后清空输入框并刷新任务列表。
+  - 保留原有 `+ 添加任务` 和详细弹窗。
+- 本周视图和本月视图支持点击日期格：
+  - 自动切回今日视图。
+  - 快速输入框预填对应日期前缀，例如 `5月24日 `。
+- 新增本周视图组件：`src/components/WeekView.jsx`。
+- 新增本月热力图组件：`src/components/MonthHeatmap.jsx`。
+- 新增统一报表入口组件：`src/components/ReportView.jsx`。
+- 新增四象限侧栏组件：`src/components/QuadrantSidebar.jsx`。
+- 新增共享日期工具：
+  - `src/shared/date.js`
+  - `shared/date.cjs`
+- 新增任务 repository：
+  - `electron/repositories/task.repository.cjs`
+
+### Changed
+
+- Tab 体系调整为：
+  - 今日
+  - 本周
+  - 本月
+  - 四象限
+  - 报表
+- 报表 tab 不再拆成周报/月报两个一级 tab，改为通过模块声明 `navChildren` 提供 `周报 / 月报` 子入口。
+- 四象限侧栏预览不再写在 `App.jsx`，改为由 `board.module.jsx` 通过 `sidebarWidgets` 贡献。
+- `src/modules/index.js` 新增 `sidebarWidgets` 聚合能力。
+- `App.jsx` 只负责布局、通用导航、模块渲染和共享上下文，不再内置四象限侧栏和报表下拉业务逻辑。
+- `task.module.cjs`、`stats.module.cjs`、`report.module.cjs`、`reminder.module.cjs` 改为通过 `task.repository.cjs` 访问任务数据。
+- `electron/preload.cjs` 从通用 `electronAPI.invoke(channel)` 收紧为白名单能力接口：
+  - `electronAPI.task.*`
+  - `electronAPI.stats.*`
+  - `electronAPI.report.*`
+  - `electronAPI.reminder.*`
+- 前端 services 改为调用白名单能力接口，删除旧的 `src/services/ipc.js`。
+
+### Verified
+
+- 已执行生产构建：
+  - `npm.cmd run build`
+- 已验证后端模块可加载：
+  - `node -e "require('./shared/date.cjs'); require('./electron/repositories/task.repository.cjs'); require('./electron/modules/task.module.cjs'); require('./electron/modules/stats.module.cjs'); require('./electron/modules/report.module.cjs'); require('./electron/modules/reminder.module.cjs'); console.log('modules ok')"`
+- 已用内存 SQLite 验证：
+  - `task:getByWeek`
+  - `task:getByMonth`
+  - `task:getByQuadrant`
+  - `stats:getQuadrant`
+  - `report:weekly`
+  - `task:quickAdd`
+- 已用浏览器冒烟验证：
+  - 快速输入框显示正常。
+  - 本周/本月日期点击可预填快速输入框。
+  - 报表子菜单和四象限侧栏跳转可用。
+
 ## 2026-05-23 - 模块化边界加固
 
 状态：已按“主体保留接口、功能模块独立接入”的目标，加固前端功能模块注册和共享领域定义。

@@ -13,3 +13,7 @@ export const featureModules = Object.values(moduleFiles)
   .sort((a, b) => (a.order || 0) - (b.order || 0));
 
 export const defaultModuleKey = featureModules[0]?.key || 'today';
+
+export const sidebarWidgets = featureModules
+  .flatMap((module) => (module.sidebarWidgets || []).map((widget) => ({ ...widget, moduleKey: module.key })))
+  .sort((a, b) => (a.order || 0) - (b.order || 0));

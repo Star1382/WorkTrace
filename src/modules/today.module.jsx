@@ -10,12 +10,15 @@ export const todayModule = {
       tasks={context.tasks}
       highlightedTaskId={context.highlightedTaskId}
       selectedTaskId={context.selectedTaskId}
+      quickAddDraft={context.quickAddDraft}
+      quickEditTaskId={context.quickEditTaskId}
       onSelectTask={context.setSelectedTaskId}
       onToggleStatus={context.handleToggleStatus}
       onChangeStatus={context.handleChangeStatus}
       onEdit={context.handleEditTask}
       onDelete={context.handleDeleteTask}
       onAdd={context.handleAddTask}
+      onQuickAdd={context.handleQuickAdd}
     />
   )
 };

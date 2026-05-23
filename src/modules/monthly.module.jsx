@@ -1,11 +1,15 @@
 import React from 'react';
-import MonthlyReport from '../components/MonthlyReport';
+import MonthHeatmap from '../components/MonthHeatmap';
 
 export const monthlyModule = {
-  key: 'monthly',
-  label: '月报',
-  order: 40,
+  key: 'month',
+  label: '本月',
+  order: 30,
   render: (context) => (
-    <MonthlyReport date={context.selectedDateValue} refreshKey={context.refreshKey} />
+    <MonthHeatmap
+      date={context.selectedDateValue}
+      refreshKey={context.refreshKey}
+      onDateQuickAdd={context.prepareQuickAddForDate}
+    />
   )
 };
