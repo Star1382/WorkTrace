@@ -37,7 +37,9 @@ app.whenReady().then(() => {
   initDatabase();
   const db = getDb();
   initAll(db);
-  registerAll(require('electron').ipcMain, db);
+  registerAll(require('electron').ipcMain, db, {
+    getMainWindow: () => mainWindow
+  });
   createWindow();
   
   console.log('[WorkTrace] Started successfully');

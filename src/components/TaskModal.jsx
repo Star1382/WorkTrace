@@ -49,6 +49,36 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
     });
   };
 
+  const formatDateTimeLocal = (date) => {
+    const pad = (value) => String(value).padStart(2, '0');
+    return [
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+      `${pad(date.getHours())}:${pad(date.getMinutes())}`
+    ].join('T');
+  };
+
+  const setPresetReminder = (preset) => {
+    const next = new Date();
+
+    if (preset === 'hour') {
+      next.setHours(next.getHours() + 1);
+    }
+
+    if (preset === 'tomorrow') {
+      next.setDate(next.getDate() + 1);
+      next.setHours(9, 0, 0, 0);
+    }
+
+    if (preset === 'nextMonday') {
+      const day = next.getDay();
+      const daysUntilMonday = day === 0 ? 1 : 8 - day;
+      next.setDate(next.getDate() + daysUntilMonday);
+      next.setHours(9, 0, 0, 0);
+    }
+
+    setRemindAt(formatDateTimeLocal(next));
+  };
+
   const quadrantOptions = [
     { value: 0, label: '未分类', color: 'bg-gray-100 text-gray-700' },
     { value: 1, label: '紧急重要', color: 'bg-red-100 text-red-700' },
@@ -170,6 +200,30 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               />
             </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setPresetReminder('hour')}
+              className="px-3 py-1.5 text-xs text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+            >
+              1小时后
+            </button>
+            <button
+              type="button"
+              onClick={() => setPresetReminder('tomorrow')}
+              className="px-3 py-1.5 text-xs text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+            >
+              明天9:00
+            </button>
+            <button
+              type="button"
+              onClick={() => setPresetReminder('nextMonday')}
+              className="px-3 py-1.5 text-xs text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+            >
+              下周一9:00
+            </button>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

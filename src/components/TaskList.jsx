@@ -1,7 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
-function TaskList({ tasks, onToggleStatus, onChangeStatus, onEdit, onDelete, onAdd }) {
+function TaskList({
+  tasks,
+  highlightedTaskId,
+  selectedTaskId,
+  onSelectTask,
+  onToggleStatus,
+  onChangeStatus,
+  onEdit,
+  onDelete,
+  onAdd
+}) {
   const [contextMenu, setContextMenu] = useState(null);
+  const taskRefs = useRef({});
 
   const quadrantColors = {
     1: 'bg-red-500',
@@ -41,11 +52,17 @@ function TaskList({ tasks, onToggleStatus, onChangeStatus, onEdit, onDelete, onA
     closeContextMenu();
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClick = () => closeContextMenu();
     window.addEventListener('click', handleClick);
     return () => window.removeEventListener('click', handleClick);
   }, []);
+
+  useEffect(() => {
+    if (highlightedTaskId && taskRefs.current[highlightedTaskId]) {
+      taskRefs.current[highlightedTaskId].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightedTaskId]);
 
   const getStatusLabel = (status) => {
     const labels = {
@@ -74,13 +91,19 @@ function TaskList({ tasks, onToggleStatus, onChangeStatus, onEdit, onDelete, onA
         tasks.map((task) => (
           <div
             key={task.id}
-            className={`bg-white rounded-lg shadow-sm p-4 flex items-start gap-3 hover:shadow-md transition-shadow ${
+            ref={(node) => { taskRefs.current[task.id] = node; }}
+            onClick={() => onSelectTask(task.id)}
+            className={`bg-white rounded-lg shadow-sm p-4 flex items-start gap-3 hover:shadow-md transition-shadow cursor-pointer ${
               task.status === 'done' ? 'opacity-70' : ''
+            } ${
+              selectedTaskId === task.id ? 'ring-2 ring-blue-300' : ''
+            } ${
+              highlightedTaskId === task.id ? 'ring-2 ring-amber-400 bg-amber-50' : ''
             }`}
             onContextMenu={(e) => handleContextMenu(e, task)}
           >
             <button
-              onClick={() => onToggleStatus(task.id, task.status)}
+              onClick={(e) => { e.stopPropagation(); onToggleStatus(task.id, task.status); }}
               className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0
                 ${task.status === 'done' ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-blue-400'}`}
             >
@@ -120,14 +143,14 @@ function TaskList({ tasks, onToggleStatus, onChangeStatus, onEdit, onDelete, onA
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => onEdit(task)}
+                onClick={(e) => { e.stopPropagation(); onEdit(task); }}
                 className="p-1 text-gray-400 hover:text-blue-500"
                 title="编辑"
               >
                 ✏️
               </button>
               <button
-                onClick={() => onDelete(task.id)}
+                onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
                 className="p-1 text-gray-400 hover:text-red-500"
                 title="删除"
               >

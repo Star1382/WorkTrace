@@ -5,6 +5,7 @@ import TaskModal from './components/TaskModal';
 import StatusBar from './components/StatusBar';
 import WeeklyReport from './components/WeeklyReport';
 import MonthlyReport from './components/MonthlyReport';
+import QuadrantBoard from './components/QuadrantBoard';
 import { taskService } from './services/taskService';
 import { statsService } from './services/statsService';
 
@@ -16,6 +17,8 @@ function App() {
   const [weekStats, setWeekStats] = useState({ total: 0, done: 0 });
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [highlightedTaskId, setHighlightedTaskId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const formatDate = (date) => {
@@ -23,6 +26,14 @@ function App() {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  };
+
+  const parseLocalDate = (value) => {
+    const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) {
+      return new Date();
+    }
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
   };
 
   const loadTasks = useCallback(async () => {
@@ -48,6 +59,12 @@ function App() {
     loadStats();
   }, [loadTasks, loadStats]);
 
+  useEffect(() => {
+    if (selectedTaskId && !tasks.some((task) => task.id === selectedTaskId)) {
+      setSelectedTaskId(null);
+    }
+  }, [tasks, selectedTaskId]);
+
   const handleAddTask = () => {
     setEditingTask(null);
     setShowModal(true);
@@ -58,6 +75,12 @@ function App() {
     setShowModal(true);
   };
 
+  const refreshAll = () => {
+    loadTasks();
+    loadStats();
+    setRefreshKey((key) => key + 1);
+  };
+
   const handleSaveTask = async (taskData) => {
     if (editingTask) {
       await taskService.update({ ...taskData, id: editingTask.id });
@@ -65,31 +88,26 @@ function App() {
       await taskService.add({ ...taskData, due_date: taskData.due_date || formatDate(selectedDate) });
     }
     setShowModal(false);
-    loadTasks();
-    loadStats();
-    setRefreshKey((key) => key + 1);
+    refreshAll();
   };
 
   const handleToggleStatus = async (taskId, currentStatus) => {
     const newStatus = currentStatus === 'done' ? 'todo' : 'done';
     await taskService.toggleStatus(taskId, newStatus);
-    loadTasks();
-    loadStats();
-    setRefreshKey((key) => key + 1);
+    refreshAll();
   };
 
   const handleChangeStatus = async (taskId, newStatus) => {
     await taskService.toggleStatus(taskId, newStatus);
-    loadTasks();
-    loadStats();
-    setRefreshKey((key) => key + 1);
+    refreshAll();
   };
 
   const handleDeleteTask = async (taskId) => {
     await taskService.delete(taskId);
-    loadTasks();
-    loadStats();
-    setRefreshKey((key) => key + 1);
+    if (selectedTaskId === taskId) {
+      setSelectedTaskId(null);
+    }
+    refreshAll();
   };
 
   const selectedDateText = selectedDate.toLocaleDateString('zh-CN', {
@@ -101,9 +119,81 @@ function App() {
 
   const tabs = [
     { key: 'today', label: '今日' },
+    { key: 'board', label: '看板' },
     { key: 'weekly', label: '周报' },
     { key: 'monthly', label: '月报' }
   ];
+
+  useEffect(() => {
+    if (!window.electronAPI?.on) {
+      return undefined;
+    }
+
+    return window.electronAPI.on('reminder:focusTask', (task) => {
+      if (task?.due_date) {
+        setSelectedDate(parseLocalDate(task.due_date));
+      }
+      setActiveView('today');
+      setSelectedTaskId(task.id);
+      setHighlightedTaskId(task.id);
+      setRefreshKey((key) => key + 1);
+      window.setTimeout(() => setHighlightedTaskId(null), 8000);
+    });
+  }, []);
+
+  useEffect(() => {
+    const isTypingTarget = (target) => {
+      const tagName = target?.tagName?.toLowerCase();
+      return ['input', 'textarea', 'select'].includes(tagName) || target?.isContentEditable;
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.ctrlKey && !event.shiftKey && !event.altKey) {
+        const index = ['1', '2', '3', '4'].indexOf(event.key);
+        if (index >= 0 && tabs[index]) {
+          event.preventDefault();
+          setActiveView(tabs[index].key);
+          return;
+        }
+
+        if (event.key.toLowerCase() === 'n') {
+          event.preventDefault();
+          handleAddTask();
+          return;
+        }
+      }
+
+      if (event.key === 'Escape') {
+        if (showModal) {
+          event.preventDefault();
+          setShowModal(false);
+        }
+        return;
+      }
+
+      if (showModal || isTypingTarget(event.target)) {
+        return;
+      }
+
+      const selectedTask = tasks.find((task) => task.id === selectedTaskId);
+      if (!selectedTask) {
+        return;
+      }
+
+      if (event.key === 'Delete') {
+        event.preventDefault();
+        handleDeleteTask(selectedTask.id);
+      }
+
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        handleEditTask(selectedTask);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showModal, selectedTaskId, tasks]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
@@ -183,6 +273,9 @@ function App() {
             {activeView === 'today' && (
               <TaskList
                 tasks={tasks}
+                highlightedTaskId={highlightedTaskId}
+                selectedTaskId={selectedTaskId}
+                onSelectTask={setSelectedTaskId}
                 onToggleStatus={handleToggleStatus}
                 onChangeStatus={handleChangeStatus}
                 onEdit={handleEditTask}
@@ -195,6 +288,14 @@ function App() {
             )}
             {activeView === 'monthly' && (
               <MonthlyReport date={formatDate(selectedDate)} refreshKey={refreshKey} />
+            )}
+            {activeView === 'board' && (
+              <QuadrantBoard
+                refreshKey={refreshKey}
+                onTaskMoved={refreshAll}
+                onEditTask={handleEditTask}
+                onToggleStatus={handleToggleStatus}
+              />
             )}
           </div>
 

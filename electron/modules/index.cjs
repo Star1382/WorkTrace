@@ -34,12 +34,12 @@ function initAll(db) {
   return modules;
 }
 
-function registerAll(ipcMain, db) {
+function registerAll(ipcMain, db, context = {}) {
   const modules = loadModules();
   for (const mod of Object.values(modules)) {
     if (mod.registerHandlers) {
       console.log(`[ModuleLoader] Registering handlers for module: ${mod.name}`);
-      mod.registerHandlers(ipcMain, db);
+      mod.registerHandlers(ipcMain, db, context);
     }
   }
 }

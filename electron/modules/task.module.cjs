@@ -32,6 +32,26 @@ module.exports = {
         return { success: false, error: error.message };
       }
     });
+
+    ipcMain.handle('task:getByQuadrant', async (event, params = {}) => {
+      try {
+        const excludeDone = params.excludeDone !== false;
+        const tasks = excludeDone
+          ? db.prepare(`
+              SELECT * FROM tasks
+              WHERE status != 'done'
+              ORDER BY quadrant ASC, due_date ASC, created_at ASC
+            `).all()
+          : db.prepare(`
+              SELECT * FROM tasks
+              ORDER BY quadrant ASC, due_date ASC, created_at ASC
+            `).all();
+
+        return { success: true, data: tasks };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    });
     
     ipcMain.handle('task:add', async (event, task) => {
       try {
