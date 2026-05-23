@@ -1,0 +1,30 @@
+{
+  "name": "worktrace",
+  "version": "1.0.0",
+  "description": "可视化工作台 - 面向央企行政人员的任务管理工具",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.5.0",
+    "better-sqlite3": "^12.10.0",
+    "concurrently": "^9.2.1",
+    "electron": "^33.4.11",
+    "postcss": "^8.5.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.19",
+    "vite": "^5.4.21",
+    "wait-on": "^9.0.10"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.0.4"
+  }
+}
