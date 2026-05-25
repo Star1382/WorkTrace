@@ -3,6 +3,7 @@ import Calendar from './components/Calendar';
 import TaskModal from './components/TaskModal';
 import StatusBar from './components/StatusBar';
 import ErrorBoundary from './components/ErrorBoundary';
+import ModuleErrorBoundary from './components/ModuleErrorBoundary';
 import { ToastProvider } from './components/Toast';
 import { taskService } from './services/taskService';
 import { statsService } from './services/statsService';
@@ -285,9 +286,9 @@ function App() {
             <div className="w-64 bg-white border-r border-gray-200 flex flex-col p-4">
               <Calendar selectedDate={selectedDate} onSelectDate={handleSelectDate} />
               {sidebarWidgets.map((widget) => (
-                <React.Fragment key={`${widget.moduleKey}:${widget.key}`}>
+                <ModuleErrorBoundary key={`${widget.moduleKey}:${widget.key}`}>
                   {widget.render(sidebarContext)}
-                </React.Fragment>
+                </ModuleErrorBoundary>
               ))}
             </div>
 
@@ -337,7 +338,9 @@ function App() {
               </div>
 
               <div className="flex-1 overflow-auto p-6">
-                {activeModule?.render(moduleContext)}
+                <ModuleErrorBoundary>
+                  {activeModule?.render(moduleContext)}
+                </ModuleErrorBoundary>
               </div>
 
               <div className="bg-white border-t border-gray-200 px-6 py-3">

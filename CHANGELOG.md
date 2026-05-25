@@ -2,6 +2,42 @@
 
 本文档记录 WorkTrace 的主要功能变更、修复和交付状态。
 
+## 2026-05-26 - v0.4.2 安全加固与低耦合审计修复
+
+状态：已完成安全漏洞修复、依赖整理、共享工具去重、模块解耦和组件拆分。
+
+### Fixed
+
+- **安全漏洞**：`electron/floatingPreload.cjs` 浮动窗口 IPC 从无限制 `invoke` 收紧为白名单模式，只放行 `task:getByDate`、`task:toggleStatus`、`stats:getWeek`、`floating:resizeToContent` 四个 channel。
+- **`package.json`**：8 个构建/开发工具包从 `dependencies` 移至 `devDependencies`（`electron`、`vite`、`tailwindcss` 等）；`license` 从 `ISC` 修正为 `MIT`（与 LICENSE 文件一致）。
+
+### Changed
+
+- **共享日期工具去重**：`src/shared/date.js` 不再独立维护函数逻辑，改为从 `shared/date.cjs` 重导出。新增 `getWeekDays`、`getMonthCalendar` 到 CJS 源文件，修正 `formatShortDate` 的 `fallback` 参数签名。改一处理解两处。
+- **共享领域定义去重**：`src/shared/domain.js` 不再独立维护推导逻辑，改为从 `shared/domain.cjs` 重导出。`domain.json` 仍为单一数据源。
+- **模块错误隔离**：新增 `src/components/ModuleErrorBoundary.jsx`，每个功能模块和侧栏 widget 各自包裹独立错误边界。一个模块崩溃不再导致整个应用白屏，符合低耦合设计要求。
+- **模块注册器重复 key 检测**：`src/modules/index.js` 新增启动时 key 唯一性检测，重复 key 直接抛错并提示文件来源。
+- **TaskList 组件拆分**：`TaskList.jsx`（220 行）拆分为 4 个独立组件：
+  - `QuickAddInput.jsx` — 快速添加输入框
+  - `TaskItem.jsx` — 单条任务行（`React.memo` + `forwardRef`）
+  - `ContextMenu.jsx` — 右键上下文菜单（`React.memo`）
+  - `TaskList.jsx` — 组合以上三者的容器（~100 行）
+
+### Removed
+
+- `src/services/reminderService.js`：未被任何代码导入的死代码，已删除。`App.jsx` 直接通过白名单 `electronAPI.reminder` 调用。
+
+### Rationale
+
+本次修复围绕 v0.4 的低耦合设计原则展开：前后端代码去重（单一事实来源）、IPC 白名单一致性、模块级错误隔离、组件单一职责拆分。每个文件只做一件事，改一个模块不影响另一个模块。
+
+### Verified
+
+- 已执行生产构建：`npm.cmd run build`，71 模块转换通过。
+- 日期工具 CJS→ESM 重导出通过 Vite 构建验证。
+- 领域定义 CJS→ESM 重导出通过 Vite 构建验证。
+- 新组件导入和旧引用路径兼容性已验证。
+
 ## 2026-05-24 - v0.4.1 职责分离修复
 
 状态：已完成 repository 层职责分离，将业务逻辑从数据访问层上提到模块层。

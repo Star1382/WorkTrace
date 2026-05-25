@@ -21,9 +21,9 @@ function formatDateTime(date) {
   return `${formatDate(date)} ${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
 }
 
-function formatShortDate(value) {
+function formatShortDate(value, fallback = '') {
   if (!value) {
-    return '';
+    return fallback;
   }
   const date = parseLocalDate(value);
   return `${date.getMonth() + 1}.${date.getDate()}`;
@@ -52,6 +52,38 @@ function getMonthRange(value) {
   return { start, end, startValue: formatDate(start), endValue: formatDate(end) };
 }
 
+function getWeekDays(value) {
+  const { start } = getWeekRange(value);
+  return Array.from({ length: 7 }, (_, index) => {
+    const item = new Date(start);
+    item.setDate(start.getDate() + index);
+    return item;
+  });
+}
+
+function getMonthCalendar(value) {
+  const date = parseLocalDate(value);
+  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  const start = new Date(firstDay);
+  start.setDate(firstDay.getDate() - firstDay.getDay());
+  const end = new Date(lastDay);
+  end.setDate(lastDay.getDate() + (6 - lastDay.getDay()));
+
+  const days = [];
+  const current = new Date(start);
+  while (current <= end) {
+    days.push(new Date(current));
+    current.setDate(current.getDate() + 1);
+  }
+
+  return {
+    days,
+    month: date.getMonth(),
+    title: `${date.getFullYear()}年${date.getMonth() + 1}月`
+  };
+}
+
 module.exports = {
   parseLocalDate,
   formatDate,
@@ -59,5 +91,7 @@ module.exports = {
   formatShortDate,
   formatPeriodDate,
   getWeekRange,
-  getMonthRange
+  getMonthRange,
+  getWeekDays,
+  getMonthCalendar
 };

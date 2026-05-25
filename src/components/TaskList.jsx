@@ -1,8 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as domain from '../shared/domain.js';
+import QuickAddInput from './QuickAddInput';
+import TaskItem from './TaskItem';
+import ContextMenu from './ContextMenu';
 
-const { TASK_STATUS, TASK_STATUS_OPTIONS, TASK_STATUS_LABELS, QUADRANT_LABELS } = domain;
+const MENU_WIDTH = 176;
+const MENU_HEIGHT = 216;
 
+/**
+ * 任务列表 —— 组合 QuickAddInput / TaskItem / ContextMenu
+ * 只管理 contextMenu 状态和 taskRefs，不包含子组件的渲染细节
+ */
 function TaskList({
   tasks,
   highlightedTaskId,
@@ -17,119 +24,49 @@ function TaskList({
   onAdd,
   onQuickAdd
 }) {
-  const [quickText, setQuickText] = useState('');
-  const [quickMessage, setQuickMessage] = useState('');
   const [contextMenu, setContextMenu] = useState(null);
   const quickInputRef = useRef(null);
   const taskRefs = useRef({});
 
-  const quadrantColors = {
-    1: 'bg-red-500',
-    2: 'bg-amber-500',
-    3: 'bg-blue-500',
-    4: 'bg-green-500',
-    0: 'bg-gray-300'
-  };
-
   const handleContextMenu = (e, task) => {
     e.preventDefault();
-    const menuWidth = 176;
-    const menuHeight = 216;
     let x = e.clientX;
     let y = e.clientY;
 
-    if (x + menuWidth > window.innerWidth) {
-      x = window.innerWidth - menuWidth - 8;
+    if (x + MENU_WIDTH > window.innerWidth) {
+      x = window.innerWidth - MENU_WIDTH - 8;
     }
-    if (y + menuHeight > window.innerHeight) {
-      y = window.innerHeight - menuHeight - 8;
+    if (y + MENU_HEIGHT > window.innerHeight) {
+      y = window.innerHeight - MENU_HEIGHT - 8;
     }
 
-    setContextMenu({
-      x: Math.max(8, x),
-      y: Math.max(8, y),
-      task
-    });
+    setContextMenu({ x: Math.max(8, x), y: Math.max(8, y), task });
   };
 
-  const closeContextMenu = () => {
-    setContextMenu(null);
-  };
+  const closeContextMenu = () => setContextMenu(null);
 
   const handleStatusChange = (taskId, newStatus) => {
     onChangeStatus(taskId, newStatus);
     closeContextMenu();
   };
 
-  const handleQuickAdd = async (event) => {
-    if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
-      return;
-    }
-    event.preventDefault();
-    const text = quickText.trim();
-    if (!text) {
-      return;
-    }
-
-    const result = await onQuickAdd(text);
-    if (result.success) {
-      setQuickText('');
-      setQuickMessage('');
-      return;
-    }
-    setQuickMessage(result.error || '快速创建失败');
-  };
-
-  useEffect(() => {
-    if (!quickAddDraft) {
-      return;
-    }
-    setQuickText(quickAddDraft.text || '');
-    window.setTimeout(() => {
-      quickInputRef.current?.focus();
-      quickInputRef.current?.setSelectionRange(quickInputRef.current.value.length, quickInputRef.current.value.length);
-    }, 0);
-  }, [quickAddDraft]);
-
+  // 点击外部关闭菜单
   useEffect(() => {
     const handleClick = () => closeContextMenu();
     window.addEventListener('click', handleClick);
     return () => window.removeEventListener('click', handleClick);
   }, []);
 
+  // 高亮任务自动滚动
   useEffect(() => {
     if (highlightedTaskId && taskRefs.current[highlightedTaskId]) {
       taskRefs.current[highlightedTaskId].scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [highlightedTaskId]);
 
-  const contextMenuStatuses = TASK_STATUS_OPTIONS.filter(
-    (status) => status.value !== TASK_STATUS.CANCELLED
-  );
-
-  const handleTaskClick = (task) => {
-    onSelectTask(task.id);
-    if (task.id === quickEditTaskId) {
-      onEdit(task);
-    }
-  };
-
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-        <input
-          ref={quickInputRef}
-          value={quickText}
-          onChange={(event) => {
-            setQuickText(event.target.value);
-            setQuickMessage('');
-          }}
-          onKeyDown={handleQuickAdd}
-          placeholder="输入任务，回车创建"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-        />
-        {quickMessage && <div className="mt-2 text-xs text-red-600">{quickMessage}</div>}
-      </div>
+      <QuickAddInput ref={quickInputRef} draft={quickAddDraft} onQuickAdd={onQuickAdd} />
 
       {tasks.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
@@ -138,75 +75,19 @@ function TaskList({
         </div>
       ) : (
         tasks.map((task) => (
-          <div
+          <TaskItem
             key={task.id}
             ref={(node) => { taskRefs.current[task.id] = node; }}
-            onClick={() => handleTaskClick(task)}
-            className={`bg-white rounded-lg shadow-sm p-4 flex items-start gap-3 hover:shadow-md transition-shadow cursor-pointer ${
-              task.status === TASK_STATUS.DONE ? 'opacity-70' : ''
-            } ${
-              selectedTaskId === task.id ? 'ring-2 ring-blue-300' : ''
-            } ${
-              highlightedTaskId === task.id ? 'ring-2 ring-amber-400 bg-amber-50' : ''
-            }`}
-            onContextMenu={(e) => handleContextMenu(e, task)}
-          >
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggleStatus(task.id, task.status); }}
-              className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0
-                ${task.status === TASK_STATUS.DONE ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-blue-400'}`}
-            >
-              {task.status === TASK_STATUS.DONE && '✓'}
-            </button>
-
-            <div className={`w-1 h-12 rounded-full ${quadrantColors[task.quadrant] || 'bg-gray-300'}`}></div>
-
-            <div className="flex-1 min-w-0">
-              <h3 className={`font-medium text-gray-800 ${task.status === TASK_STATUS.DONE ? 'line-through text-gray-400' : ''}`}>
-                {task.title}
-              </h3>
-              {task.description && (
-                <p className="text-sm text-gray-500 mt-1 truncate">{task.description}</p>
-              )}
-              <div className="flex items-center gap-2 mt-2">
-                <span className={`text-xs px-2 py-0.5 rounded ${
-                  task.quadrant === 1 ? 'bg-red-100 text-red-700' :
-                  task.quadrant === 2 ? 'bg-amber-100 text-amber-700' :
-                  task.quadrant === 3 ? 'bg-blue-100 text-blue-700' :
-                  task.quadrant === 4 ? 'bg-green-100 text-green-700' :
-                  'bg-gray-100 text-gray-600'
-                }`}>
-                  {QUADRANT_LABELS[task.quadrant] || QUADRANT_LABELS[0]}
-                </span>
-                <span className={`text-xs px-2 py-0.5 rounded ${
-                  task.status === TASK_STATUS.TODO ? 'bg-gray-100 text-gray-600' :
-                  task.status === TASK_STATUS.IN_PROGRESS ? 'bg-blue-100 text-blue-600' :
-                  task.status === TASK_STATUS.DONE ? 'bg-green-100 text-green-600' :
-                  task.status === TASK_STATUS.STUCK ? 'bg-red-100 text-red-600' :
-                  'bg-gray-100 text-gray-600'
-                }`}>
-                  {TASK_STATUS_LABELS[task.status] || task.status}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={(e) => { e.stopPropagation(); onEdit(task); }}
-                className="p-1 text-gray-400 hover:text-blue-500"
-                title="编辑"
-              >
-                ✏️
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
-                className="p-1 text-gray-400 hover:text-red-500"
-                title="删除"
-              >
-                🗑️
-              </button>
-            </div>
-          </div>
+            task={task}
+            selectedTaskId={selectedTaskId}
+            highlightedTaskId={highlightedTaskId}
+            quickEditTaskId={quickEditTaskId}
+            onSelectTask={onSelectTask}
+            onToggleStatus={onToggleStatus}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onContextMenu={handleContextMenu}
+          />
         ))
       )}
 
@@ -217,29 +98,12 @@ function TaskList({
         + 添加任务
       </button>
 
-      {contextMenu && (
-        <div
-          className="fixed w-44 bg-white rounded-lg shadow-lg border py-1 z-50"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-        >
-          {contextMenuStatuses.map((status) => (
-            <button
-              key={status.value}
-              onClick={() => handleStatusChange(contextMenu.task.id, status.value)}
-              className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${contextMenu.task.status === status.value ? 'bg-blue-50' : ''}`}
-            >
-              设为{status.label}
-            </button>
-          ))}
-          <div className="border-t my-1"></div>
-          <button
-            onClick={() => { onDelete(contextMenu.task.id); closeContextMenu(); }}
-            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-          >
-            删除任务
-          </button>
-        </div>
-      )}
+      <ContextMenu
+        menu={contextMenu}
+        onChangeStatus={handleStatusChange}
+        onDelete={onDelete}
+        onClose={closeContextMenu}
+      />
     </div>
   );
 }
