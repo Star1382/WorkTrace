@@ -31,9 +31,17 @@ function getSections(tasks) {
     .map((quadrant) => ({
       quadrant,
       title: QUADRANT_LABELS[quadrant],
-      tasks: tasks.filter((task) => Number(task.quadrant) === quadrant)
+      tasks: sortTasksForSection(tasks.filter((task) => Number(task.quadrant) === quadrant))
     }))
     .filter((section) => section.tasks.length > 0);
+}
+
+function isClosedTask(task) {
+  return !PENDING_STATUSES.includes(task.status);
+}
+
+function sortTasksForSection(tasks) {
+  return [...tasks].sort((a, b) => Number(isClosedTask(a)) - Number(isClosedTask(b)));
 }
 
 function ProgressBar({ done, total }) {
@@ -52,11 +60,12 @@ function ProgressBar({ done, total }) {
 }
 
 function TaskLine({ task }) {
-  const isMuted = task.status === TASK_STATUS.DONE || task.status === TASK_STATUS.CANCELLED;
+  const isDone = task.status === TASK_STATUS.DONE;
+  const isMuted = isDone || task.status === TASK_STATUS.CANCELLED;
   return (
-    <div className={`flex items-center gap-2 py-1 text-sm ${isMuted ? 'text-gray-500' : 'text-gray-800'}`}>
+    <div className={`flex items-center gap-2 py-1 ${isDone ? 'text-xs text-gray-600' : 'text-sm font-semibold text-gray-900'} ${isMuted && !isDone ? 'text-gray-600' : ''}`}>
       <span className="w-5 text-center">{TASK_STATUS_SYMBOLS[task.status] || '☐'}</span>
-      <span className={`flex-1 min-w-0 truncate ${task.status === TASK_STATUS.DONE ? 'line-through' : ''}`}>
+      <span className={`flex-1 min-w-0 truncate ${isDone ? 'line-through decoration-gray-600' : ''}`}>
         {task.title}
       </span>
       {task.status !== TASK_STATUS.DONE && task.status !== TASK_STATUS.TODO && (

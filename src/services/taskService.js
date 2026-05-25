@@ -4,7 +4,7 @@ export const taskService = {
   getByMonth: (params = {}) => window.electronAPI.task.getByMonth(params),
   getByQuadrant: (params = {}) => window.electronAPI.task.getByQuadrant(params),
   add: (task) => window.electronAPI.task.add(task),
-  quickAdd: (text) => window.electronAPI.task.quickAdd({ text }),
+  quickAdd: (text, defaultDueDate) => window.electronAPI.task.quickAdd({ text, defaultDueDate }),
   update: (task) => window.electronAPI.task.update(task),
   toggleStatus: (id, status) => window.electronAPI.task.toggleStatus(id, status),
   delete: (id) => window.electronAPI.task.delete(id)

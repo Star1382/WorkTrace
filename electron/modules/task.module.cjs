@@ -2,7 +2,7 @@
  * Task 模块 - 任务 CRUD 操作
  */
 const { createTaskRepository } = require('../repositories/task.repository.cjs');
-const { formatDate, getWeekRange } = require('../../shared/date.cjs');
+const { parseLocalDate, formatDate, getWeekRange } = require('../../shared/date.cjs');
 
 const WEEKDAY_INDEX = {
   一: 0,
@@ -134,7 +134,7 @@ module.exports = {
 
     ipcMain.handle('task:quickAdd', async (event, params = {}) => {
       try {
-        const parsed = parseQuickTaskText(params.text);
+        const parsed = parseQuickTaskText(params.text, parseLocalDate(params.defaultDueDate));
         return { success: true, data: { ...tasks.quickAdd(parsed), parsed } };
       } catch (error) {
         return { success: false, error: error.message };

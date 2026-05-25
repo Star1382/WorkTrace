@@ -84,6 +84,10 @@ function App() {
     setShowModal(true);
   };
 
+  const handleSelectDate = useCallback((date) => {
+    setSelectedDate(parseLocalDate(date));
+  }, []);
+
   const refreshAll = () => {
     loadTasks();
     loadStats();
@@ -112,7 +116,7 @@ function App() {
   };
 
   const handleQuickAdd = async (text) => {
-    const result = await taskService.quickAdd(text);
+    const result = await taskService.quickAdd(text, selectedDateValue);
     if (result.success) {
       setQuickEditTaskId(result.data?.id || null);
       refreshAll();
@@ -150,6 +154,9 @@ function App() {
     if (module.navChildren?.length) {
       setOpenNavMenuKey((key) => key === module.key ? null : module.key);
       return;
+    }
+    if (module.key === 'today') {
+      setSelectedDate(parseLocalDate(new Date()));
     }
     openModule(module.key, {});
   };
@@ -276,7 +283,7 @@ function App() {
 
           <div className="flex flex-1 overflow-hidden">
             <div className="w-64 bg-white border-r border-gray-200 flex flex-col p-4">
-              <Calendar selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+              <Calendar selectedDate={selectedDate} onSelectDate={handleSelectDate} />
               {sidebarWidgets.map((widget) => (
                 <React.Fragment key={`${widget.moduleKey}:${widget.key}`}>
                   {widget.render(sidebarContext)}

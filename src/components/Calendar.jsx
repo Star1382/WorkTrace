@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { formatDate, parseLocalDate } from '../shared/date.js';
 
 function Calendar({ selectedDate, onSelectDate }) {
-  const [viewMonth, setViewMonth] = useState(new Date());
+  const [viewMonth, setViewMonth] = useState(() => parseLocalDate(selectedDate || new Date()));
 
   const year = viewMonth.getFullYear();
   const month = viewMonth.getMonth();
@@ -11,8 +12,13 @@ function Calendar({ selectedDate, onSelectDate }) {
   const daysInMonth = lastDayOfMonth.getDate();
   const startingDay = firstDayOfMonth.getDay();
 
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const today = parseLocalDate(new Date());
+  const todayStr = formatDate(today);
+
+  useEffect(() => {
+    const nextSelectedDate = parseLocalDate(selectedDate || new Date());
+    setViewMonth(new Date(nextSelectedDate.getFullYear(), nextSelectedDate.getMonth(), 1));
+  }, [selectedDate]);
 
   const prevMonth = () => {
     setViewMonth(new Date(year, month - 1, 1));
@@ -24,13 +30,13 @@ function Calendar({ selectedDate, onSelectDate }) {
 
   const goToToday = () => {
     setViewMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-    onSelectDate(new Date());
+    onSelectDate(today);
   };
 
   const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
   const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
 
-  const selectedStr = selectedDate.toISOString().split('T')[0];
+  const selectedStr = formatDate(parseLocalDate(selectedDate));
 
   const days = [];
   for (let i = 0; i < startingDay; i++) {
@@ -38,7 +44,7 @@ function Calendar({ selectedDate, onSelectDate }) {
   }
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDate(date);
     const isToday = dateStr === todayStr;
     const isSelected = dateStr === selectedStr;
 
