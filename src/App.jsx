@@ -10,12 +10,15 @@ import { statsService } from './services/statsService';
 import { defaultModuleKey, featureModules, sidebarWidgets } from './modules';
 import * as domain from './shared/domain.js';
 import { formatDate, parseLocalDate } from './shared/date.js';
+import { sampleTasks } from '../shared/sampleTasks.js';
 
 const { TASK_STATUS } = domain;
 
 function App() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeView, setActiveView] = useState(defaultModuleKey);
+  const [isEmpty, setIsEmpty] = useState(null); // null=加载中 true=数据库为空 false=有数据
+  const [isCreatingSamples, setIsCreatingSamples] = useState(false);
   const [activeNavChildren, setActiveNavChildren] = useState({});
   const [openNavMenuKey, setOpenNavMenuKey] = useState(null);
   const [moduleParamsByKey, setModuleParamsByKey] = useState({});
@@ -50,19 +53,56 @@ function App() {
     loadStats();
   }, [loadTasks, loadStats]);
 
+  // 首次启动检测：数据库是否为空
+  useEffect(() => {
+    let cancelled = false;
+    taskService
+      .countAll()
+      .then((result) => {
+        if (!cancelled && result.success) {
+          setIsEmpty(result.data === 0);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setIsEmpty(false); // 出错时假设有数据，避免永远显示引导
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     if (selectedTaskId && !tasks.some((task) => task.id === selectedTaskId)) {
       setSelectedTaskId(null);
     }
   }, [tasks, selectedTaskId]);
 
+  // 创建示例任务
+  const handleCreateSamples = async () => {
+    setIsCreatingSamples(true);
+    const todayValue = formatDate(new Date());
+    const samples = sampleTasks(todayValue);
+    let hasError = false;
+    for (const task of samples) {
+      const result = await taskService.add(task);
+      if (!result.success) {
+        hasError = true;
+      }
+    }
+    setIsCreatingSamples(false);
+    if (!hasError) {
+      setIsEmpty(false);
+      refreshAll();
+    }
+  };
+
   const setModuleParams = (moduleKey, params) => {
     setModuleParamsByKey((current) => ({
       ...current,
       [moduleKey]: {
         ...(current[moduleKey] || {}),
-        ...(typeof params === 'function' ? params(current[moduleKey] || {}) : params)
-      }
+        ...(typeof params === 'function' ? params(current[moduleKey] || {}) : params),
+      },
     }));
   };
 
@@ -71,7 +111,7 @@ function App() {
     setActiveView(moduleKey);
     setModuleParamsByKey((current) => ({
       ...current,
-      [moduleKey]: params
+      [moduleKey]: params,
     }));
   };
 
@@ -148,12 +188,12 @@ function App() {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    weekday: 'long'
+    weekday: 'long',
   });
 
   const handleTabClick = (module) => {
     if (module.navChildren?.length) {
-      setOpenNavMenuKey((key) => key === module.key ? null : module.key);
+      setOpenNavMenuKey((key) => (key === module.key ? null : module.key));
       return;
     }
     if (module.key === 'today') {
@@ -242,7 +282,8 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showModal, selectedTaskId, tasks, tabs]);
 
-  const activeModule = featureModules.find((module) => module.key === activeView) || featureModules[0];
+  const activeModule =
+    featureModules.find((module) => module.key === activeView) || featureModules[0];
   const activeNavChildKey = activeNavChildren[activeModule.key] || activeModule.defaultNavChildKey;
   const moduleContext = {
     tasks,
@@ -255,6 +296,8 @@ function App() {
     quickEditTaskId,
     moduleParams: moduleParamsByKey[activeModule.key] || {},
     activeNavChildKey,
+    isEmpty,
+    isCreatingSamples,
     openModule,
     setModuleParams,
     setSelectedDate,
@@ -263,15 +306,16 @@ function App() {
     handleEditTask,
     handleSaveTask,
     handleQuickAdd,
+    handleCreateSamples,
     prepareQuickAddForDate,
     handleToggleStatus,
     handleChangeStatus,
     handleDeleteTask,
-    refreshAll
+    refreshAll,
   };
   const sidebarContext = {
     ...moduleContext,
-    moduleParamsByKey
+    moduleParamsByKey,
   };
 
   return (
@@ -295,9 +339,7 @@ function App() {
             <div className="flex-1 flex flex-col overflow-hidden">
               <div className="bg-white border-b border-gray-200 px-6 py-4 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-xl font-medium text-gray-800">
-                    {selectedDateText}
-                  </h2>
+                  <h2 className="text-xl font-medium text-gray-800">{selectedDateText}</h2>
                   <button
                     onClick={handleAddTask}
                     className="px-3 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
@@ -338,9 +380,7 @@ function App() {
               </div>
 
               <div className="flex-1 overflow-auto p-6">
-                <ModuleErrorBoundary>
-                  {activeModule?.render(moduleContext)}
-                </ModuleErrorBoundary>
+                <ModuleErrorBoundary>{activeModule?.render(moduleContext)}</ModuleErrorBoundary>
               </div>
 
               <div className="bg-white border-t border-gray-200 px-6 py-3">

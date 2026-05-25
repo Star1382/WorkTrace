@@ -8,7 +8,7 @@ export const reportModule = {
   defaultNavChildKey: 'weekly',
   navChildren: [
     { key: 'weekly', label: '周报' },
-    { key: 'monthly', label: '月报' }
+    { key: 'monthly', label: '月报' },
   ],
   render: (context) => (
     <ReportView
@@ -16,5 +16,5 @@ export const reportModule = {
       date={context.selectedDateValue}
       refreshKey={context.refreshKey}
     />
-  )
+  ),
 };

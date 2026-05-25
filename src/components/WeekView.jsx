@@ -62,20 +62,28 @@ function WeekView({ date, refreshKey, onDateQuickAdd }) {
                   </div>
                   <div className="text-xs text-gray-500">{dateValue.slice(5)}</div>
                 </div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{dayTasks.length}项</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                  {dayTasks.length}项
+                </span>
               </div>
 
               <div className="mt-3 space-y-2">
-                {previewTasks.length > 0 ? previewTasks.map((task) => (
-                  <div key={task.id} className="rounded-md bg-gray-50 px-2 py-1.5">
-                    <div className="text-xs font-medium text-gray-800 truncate">{task.title}</div>
-                    <div className="text-[11px] text-gray-500 mt-0.5">{TASK_STATUS_LABELS[task.status] || task.status}</div>
-                  </div>
-                )) : (
+                {previewTasks.length > 0 ? (
+                  previewTasks.map((task) => (
+                    <div key={task.id} className="rounded-md bg-gray-50 px-2 py-1.5">
+                      <div className="text-xs font-medium text-gray-800 truncate">{task.title}</div>
+                      <div className="text-[11px] text-gray-500 mt-0.5">
+                        {TASK_STATUS_LABELS[task.status] || task.status}
+                      </div>
+                    </div>
+                  ))
+                ) : (
                   <div className="text-xs text-gray-400">暂无任务</div>
                 )}
                 {dayTasks.length > previewTasks.length && (
-                  <div className="text-xs font-medium text-gray-500">+{dayTasks.length - previewTasks.length}</div>
+                  <div className="text-xs font-medium text-gray-500">
+                    +{dayTasks.length - previewTasks.length}
+                  </div>
                 )}
               </div>
             </button>

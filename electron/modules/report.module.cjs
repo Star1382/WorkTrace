@@ -5,14 +5,14 @@ const {
   TASK_STATUS_LABELS,
   TASK_STATUS_SYMBOLS,
   PENDING_STATUSES,
-  QUADRANT_LABELS
+  QUADRANT_LABELS,
 } = require('../../shared/domain.cjs');
 const {
   formatDate,
   formatShortDate,
   formatPeriodDate,
   getWeekRange,
-  getMonthRange
+  getMonthRange,
 } = require('../../shared/date.cjs');
 const { createTaskRepository } = require('../repositories/task.repository.cjs');
 
@@ -21,19 +21,19 @@ const STATUS_ORDER = [
   TASK_STATUS.IN_PROGRESS,
   TASK_STATUS.TODO,
   TASK_STATUS.STUCK,
-  TASK_STATUS.CANCELLED
+  TASK_STATUS.CANCELLED,
 ];
 
 function countByStatus(tasks) {
   return STATUS_ORDER.reduce((acc, status) => {
-    acc[status] = tasks.filter(task => task.status === status).length;
+    acc[status] = tasks.filter((task) => task.status === status).length;
     return acc;
   }, {});
 }
 
 function countByQuadrant(tasks) {
   const result = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
-  tasks.forEach(task => {
+  tasks.forEach((task) => {
     const key = Number(task.quadrant) || 0;
     if (Object.prototype.hasOwnProperty.call(result, key)) {
       result[key] += 1;
@@ -49,7 +49,7 @@ function buildBaseReport(tasks, start, end) {
     total: tasks.length,
     ...statusCounts,
     quadrant_breakdown: countByQuadrant(tasks),
-    tasks
+    tasks,
   };
 }
 
@@ -71,11 +71,13 @@ function buildMonthlyTrend(tasks, start, end) {
 
     const chunkStart = formatDate(cursor);
     const chunkEnd = formatDate(weekEnd);
-    const weekTasks = tasks.filter(task => task.due_date >= chunkStart && task.due_date <= chunkEnd);
+    const weekTasks = tasks.filter(
+      (task) => task.due_date >= chunkStart && task.due_date <= chunkEnd
+    );
     trend.push({
       week: `${cursor.getMonth() + 1}.${cursor.getDate()}-${weekEnd.getMonth() + 1}.${weekEnd.getDate()}`,
       total: weekTasks.length,
-      done: weekTasks.filter(task => task.status === TASK_STATUS.DONE).length
+      done: weekTasks.filter((task) => task.status === TASK_STATUS.DONE).length,
     });
 
     cursor.setDate(weekEnd.getDate() + 1);
@@ -89,30 +91,33 @@ function buildMonthlyReport(taskRepository, date) {
   const tasks = taskRepository.getInRange(startValue, endValue);
   return {
     ...buildBaseReport(tasks, start, end),
-    weekly_trend: buildMonthlyTrend(tasks, start, end)
+    weekly_trend: buildMonthlyTrend(tasks, start, end),
   };
 }
 
 function getReport(type, taskRepository, date) {
-  return type === 'monthly' ? buildMonthlyReport(taskRepository, date) : buildWeeklyReport(taskRepository, date);
+  return type === 'monthly'
+    ? buildMonthlyReport(taskRepository, date)
+    : buildWeeklyReport(taskRepository, date);
 }
 
 function getQuadrantSections(tasks) {
   return [1, 2, 3, 4, 0]
-    .map(quadrant => ({
+    .map((quadrant) => ({
       quadrant,
       title: QUADRANT_LABELS[quadrant],
-      tasks: tasks.filter(task => Number(task.quadrant) === quadrant)
+      tasks: tasks.filter((task) => Number(task.quadrant) === quadrant),
     }))
-    .filter(section => section.tasks.length > 0);
+    .filter((section) => section.tasks.length > 0);
 }
 
 function renderTaskLine(task) {
   const symbol = TASK_STATUS_SYMBOLS[task.status] || '☐';
   const dateText = formatShortDate(task.due_date);
-  const statusText = task.status && task.status !== TASK_STATUS.DONE && task.status !== TASK_STATUS.TODO
-    ? `（${TASK_STATUS_LABELS[task.status] || task.status}）`
-    : '';
+  const statusText =
+    task.status && task.status !== TASK_STATUS.DONE && task.status !== TASK_STATUS.TODO
+      ? `（${TASK_STATUS_LABELS[task.status] || task.status}）`
+      : '';
   return `${symbol} ${task.title}${dateText ? ` ${dateText}` : ''}${statusText}`;
 }
 
@@ -125,27 +130,29 @@ function renderReportText(type, report) {
   const lines = [
     `【${isMonthly ? '本月' : '本周'}工作汇报】${formatPeriodDate(start)}-${formatShortDate(end)}`,
     `完成率：${done}/${total} (${rate}%)`,
-    ''
+    '',
   ];
 
   if (isMonthly && report.weekly_trend?.length) {
     lines.push('周度趋势：');
-    report.weekly_trend.forEach(item => {
+    report.weekly_trend.forEach((item) => {
       lines.push(`${item.week}：${item.done}/${item.total}`);
     });
     lines.push('');
   }
 
   getQuadrantSections(report.tasks).forEach((section, index) => {
-    lines.push(`${['一', '二', '三', '四', '五'][index]}、${section.title}（${section.tasks.length}项）`);
-    section.tasks.forEach(task => lines.push(renderTaskLine(task)));
+    lines.push(
+      `${['一', '二', '三', '四', '五'][index]}、${section.title}（${section.tasks.length}项）`
+    );
+    section.tasks.forEach((task) => lines.push(renderTaskLine(task)));
     lines.push('');
   });
 
-  const pending = report.tasks.filter(task => PENDING_STATUSES.includes(task.status));
+  const pending = report.tasks.filter((task) => PENDING_STATUSES.includes(task.status));
   if (pending.length) {
     lines.push('待推进事项：');
-    pending.forEach(task => lines.push(renderTaskLine(task)));
+    pending.forEach((task) => lines.push(renderTaskLine(task)));
   }
 
   return lines.join('\n').trim();
@@ -182,8 +189,8 @@ module.exports = {
           success: true,
           data: {
             text: renderReportText(type, report),
-            filename
-          }
+            filename,
+          },
         };
       } catch (error) {
         return { success: false, error: error.message };
@@ -203,7 +210,7 @@ module.exports = {
       try {
         const result = await dialog.showSaveDialog({
           defaultPath: params.defaultPath || params.filename || 'worktrace-report.txt',
-          filters: [{ name: 'Text', extensions: ['txt'] }]
+          filters: [{ name: 'Text', extensions: ['txt'] }],
         });
 
         if (result.canceled || !result.filePath) {
@@ -216,5 +223,5 @@ module.exports = {
         return { success: false, error: error.message };
       }
     });
-  }
+  },
 };

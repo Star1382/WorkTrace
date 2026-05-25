@@ -4,7 +4,7 @@ const INVOKE_WHITELIST = new Set([
   'task:getByDate',
   'task:toggleStatus',
   'stats:getWeek',
-  'floating:resizeToContent'
+  'floating:resizeToContent',
 ]);
 
 contextBridge.exposeInMainWorld('floatingAPI', {
@@ -16,5 +16,5 @@ contextBridge.exposeInMainWorld('floatingAPI', {
   },
   hide: () => ipcRenderer.send('floating:hide'),
   showMain: () => ipcRenderer.send('floating:showMain'),
-  togglePin: () => ipcRenderer.invoke('floating:togglePin')
+  togglePin: () => ipcRenderer.invoke('floating:togglePin'),
 });

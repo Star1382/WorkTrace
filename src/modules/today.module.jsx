@@ -12,6 +12,8 @@ export const todayModule = {
       selectedTaskId={context.selectedTaskId}
       quickAddDraft={context.quickAddDraft}
       quickEditTaskId={context.quickEditTaskId}
+      isEmpty={context.isEmpty}
+      isCreatingSamples={context.isCreatingSamples}
       onSelectTask={context.setSelectedTaskId}
       onToggleStatus={context.handleToggleStatus}
       onChangeStatus={context.handleChangeStatus}
@@ -19,6 +21,7 @@ export const todayModule = {
       onDelete={context.handleDeleteTask}
       onAdd={context.handleAddTask}
       onQuickAdd={context.handleQuickAdd}
+      onCreateSamples={context.handleCreateSamples}
     />
-  )
+  ),
 };

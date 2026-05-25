@@ -11,5 +11,5 @@ export const weeklyModule = {
       refreshKey={context.refreshKey}
       onDateQuickAdd={context.prepareQuickAddForDate}
     />
-  )
+  ),
 };

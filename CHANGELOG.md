@@ -2,6 +2,35 @@
 
 本文档记录 WorkTrace 的主要功能变更、修复和交付状态。
 
+## 2026-05-27 - v0.4.3 Bug修复与上线补齐
+
+状态：已完成已知 Bug 修复、打包配置、新用户引导、测试体系、代码规范和数据库备份。
+
+### Fixed
+
+- **Bug：completed_at 时区错误**：`task.module.cjs` 的 `task:toggleStatus` 中 `completed_at` 从 `new Date().toISOString()`（UTC）改为 `formatDateTime(new Date())`（本地时间），修复中国时区用户看到的完成时间差 8 小时的问题。
+- **Bug：loadModules 重复加载**：`electron/modules/index.cjs` 的 `loadModules()` 加模块级缓存，避免 `initAll` 和 `registerAll` 重复扫描磁盘。
+- **Bug：window-all-closed 死代码**：`electron/main.cjs` 移除永不触发的事件监听（关窗被拦截为 hide）。
+
+### Added
+
+- **electron-builder 打包**：安装 `electron-builder`，添加 `build` 配置（NSIS 安装包），添加 `npm run pack` 脚本和 `postinstall` 钩子。`.gitignore` 增加 `release/` 和 `*.blockmap`。
+- **新用户欢迎引导**：数据库为空时显示 3 步引导面板 + "创建示例任务"按钮。示例任务数据统一维护在 `shared/sampleTasks.js`。通过新增 `task:countAll` IPC 检测数据库状态。
+- **测试体系**：安装 `vitest`，创建 `test/task.repository.test.cjs`（CRUD 完整流程）和 `test/reminder.module.test.cjs`（提醒解析和过滤逻辑），8+8 共 16 个测试用例。使用内存 SQLite 无外部依赖。
+- **ESLint + Prettier**：安装 ESLint 9 + Prettier + eslint-config-prettier + eslint-plugin-react，创建 flat config 和 `.prettierrc`。添加 `npm run lint` 和 `npm run format` 脚本。全代码已格式化，lint 零错误。
+- **数据库备份/导出**：新增 `electron/modules/backup.module.cjs`，注册 IPC handler `backup:export`、`backup:import`、`backup:exportJSON`。前端在 StatusBar 新增「导出备份」「JSON」「导入」按钮。导入前二次确认。
+
+### Why not yet
+
+- **测试未通过**：`better-sqlite3` native 模块为 Electron 编译（NODE_MODULE_VERSION 130），vitest 使用系统 Node.js（137），存在 ABI 不匹配。测试文件本身正确，需先 `npm rebuild better-sqlite3` 或重启系统解除文件锁后运行。
+
+### Verified
+
+- 已执行生产构建：`npm run build`，73 模块转换通过。
+- 已执行 `npm run format`，所有源文件格式化。
+- 已执行 `npm run lint`，零 error（仅 harmless MODULE_TYPELESS_PACKAGE_JSON 提示）。
+- 模块加载验证：`node -e "..."` 所有后端模块正常加载。
+
 ## 2026-05-26 - v0.4.2 安全加固与低耦合审计修复
 
 状态：已完成安全漏洞修复、依赖整理、共享工具去重、模块解耦和组件拆分。

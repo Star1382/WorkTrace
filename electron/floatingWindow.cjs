@@ -11,7 +11,7 @@ function getFloatingBounds(width = 320, height = 360) {
     x: Math.round(x + workWidth - width - 20),
     y: Math.round(y + 60),
     width,
-    height
+    height,
   };
 }
 
@@ -25,7 +25,10 @@ function resizeFloatingWindowToContent() {
   }
 
   return floatingWindow.webContents
-    .executeJavaScript('Math.ceil(document.documentElement.scrollHeight || document.body.scrollHeight || 360)', true)
+    .executeJavaScript(
+      'Math.ceil(document.documentElement.scrollHeight || document.body.scrollHeight || 360)',
+      true
+    )
     .then((contentHeight) => {
       if (!floatingWindow || floatingWindow.isDestroyed()) {
         return false;
@@ -57,8 +60,8 @@ function createFloatingWindow(getMainWindowCallback) {
     webPreferences: {
       preload: path.join(__dirname, 'floatingPreload.cjs'),
       contextIsolation: true,
-      nodeIntegration: false
-    }
+      nodeIntegration: false,
+    },
   });
 
   floatingWindow.on('close', (event) => {
@@ -71,7 +74,7 @@ function createFloatingWindow(getMainWindowCallback) {
 
   floatingWindow.webContents.on('did-finish-load', resizeFloatingWindowToContent);
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (!app.isPackaged) {
     floatingWindow.loadURL('http://localhost:5173/floating/');
   } else {
     floatingWindow.loadFile(path.join(__dirname, '../dist/floating/index.html'));
@@ -132,5 +135,5 @@ module.exports = {
   toggleFloatingWindow,
   showMainWindow,
   toggleAlwaysOnTop,
-  resizeFloatingWindowToContent
+  resizeFloatingWindowToContent,
 };

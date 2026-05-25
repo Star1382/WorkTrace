@@ -11,5 +11,5 @@ export const monthlyModule = {
       refreshKey={context.refreshKey}
       onDateQuickAdd={context.prepareQuickAddForDate}
     />
-  )
+  ),
 };

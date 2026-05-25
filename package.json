@@ -6,7 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "start": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\""
+    "start": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "pack": "vite build && electron-builder --win",
+    "postinstall": "electron-builder install-app-deps",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/ electron/ shared/",
+    "format": "prettier --write \"src/**/*.{js,jsx}\" \"electron/**/*.cjs\" \"shared/**/*.{cjs,js,json}\""
   },
   "keywords": [],
   "author": "",
@@ -25,9 +31,36 @@
     "autoprefixer": "^10.5.0",
     "concurrently": "^9.2.1",
     "electron": "^33.4.11",
+    "electron-builder": "^26.8.1",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
     "postcss": "^8.5.15",
+    "prettier": "^3.8.3",
     "tailwindcss": "^3.4.19",
     "vite": "^5.4.21",
+    "vitest": "^4.1.7",
     "wait-on": "^9.0.10"
+  },
+  "build": {
+    "appId": "com.worktrace.app",
+    "productName": "WorkTrace",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "shared/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "npmRebuild": true
   }
 }

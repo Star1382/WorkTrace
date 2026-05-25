@@ -30,7 +30,7 @@ function getFloatingApi() {
     },
     hide: () => {},
     showMain: () => {},
-    togglePin: async () => true
+    togglePin: async () => true,
   };
 }
 
@@ -50,7 +50,7 @@ function FloatingApp() {
     try {
       const [taskResult, statsResult] = await Promise.all([
         api.invoke('task:getByDate', today),
-        api.invoke('stats:getWeek')
+        api.invoke('stats:getWeek'),
       ]);
 
       if (taskResult?.success) {
@@ -155,14 +155,21 @@ function FloatingApp() {
 
         <main className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
           {loading && <div className="px-2 py-8 text-center text-sm text-white/55">加载中...</div>}
-          {!loading && error && <div className="rounded-md bg-red-500/15 px-2 py-2 text-xs text-red-100">{error}</div>}
+          {!loading && error && (
+            <div className="rounded-md bg-red-500/15 px-2 py-2 text-xs text-red-100">{error}</div>
+          )}
           {!loading && !error && tasks.length === 0 && (
             <div className="px-2 py-8 text-center text-sm text-white/45">今天没有待办</div>
           )}
           {!loading && !error && tasks.length > 0 && (
             <div className="space-y-1">
               {tasks.map((task) => (
-                <TaskStrip key={task.id} task={task} onToggle={handleToggle} onOpenMain={showMainWindow} />
+                <TaskStrip
+                  key={task.id}
+                  task={task}
+                  onToggle={handleToggle}
+                  onOpenMain={showMainWindow}
+                />
               ))}
             </div>
           )}

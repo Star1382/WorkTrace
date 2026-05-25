@@ -49,7 +49,7 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
       quadrant,
       status,
       due_date: dueDate || null,
-      remind_at: remindAt ? remindAt.replace('T', ' ') + ':00' : null
+      remind_at: remindAt ? remindAt.replace('T', ' ') + ':00' : null,
     });
   };
 
@@ -57,7 +57,7 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
     const pad = (value) => String(value).padStart(2, '0');
     return [
       `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
-      `${pad(date.getHours())}:${pad(date.getMinutes())}`
+      `${pad(date.getHours())}:${pad(date.getMinutes())}`,
     ].join('T');
   };
 
@@ -88,20 +88,15 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
     1: 'bg-red-100 text-red-700',
     2: 'bg-amber-100 text-amber-700',
     3: 'bg-blue-100 text-blue-700',
-    4: 'bg-green-100 text-green-700'
+    4: 'bg-green-100 text-green-700',
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-gray-800">
-            {task ? '编辑任务' : '添加任务'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl"
-          >
+          <h2 className="text-lg font-medium text-gray-800">{task ? '编辑任务' : '添加任务'}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">
             ×
           </button>
         </div>
@@ -122,9 +117,7 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              备注
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">备注</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -135,9 +128,7 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              四象限
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">四象限</label>
             <div className="grid grid-cols-5 gap-2">
               {QUADRANT_OPTIONS.map((opt) => (
                 <button
@@ -157,9 +148,7 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              状态
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">状态</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
@@ -175,9 +164,7 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                截止日期
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">截止日期</label>
               <input
                 type="date"
                 value={dueDate || ''}
@@ -186,9 +173,7 @@ function TaskModal({ task, defaultDueDate, onSave, onClose }) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                提醒时间
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">提醒时间</label>
               <input
                 type="datetime-local"
                 value={remindAt}

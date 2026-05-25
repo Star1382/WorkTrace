@@ -30,5 +30,5 @@ module.exports = {
         return { success: false, error: error.message };
       }
     });
-  }
+  },
 };

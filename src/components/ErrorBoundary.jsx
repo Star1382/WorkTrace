@@ -24,12 +24,8 @@ class ErrorBoundary extends React.Component {
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
           <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
             <div className="text-5xl mb-4">⚠️</div>
-            <h1 className="text-xl font-bold text-gray-800 mb-2">
-              应用出现了一些问题
-            </h1>
-            <p className="text-gray-600 mb-4 text-sm">
-              {this.state.error?.message || '未知错误'}
-            </p>
+            <h1 className="text-xl font-bold text-gray-800 mb-2">应用出现了一些问题</h1>
+            <p className="text-gray-600 mb-4 text-sm">{this.state.error?.message || '未知错误'}</p>
             <button
               onClick={this.handleReload}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

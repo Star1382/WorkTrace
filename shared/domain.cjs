@@ -21,7 +21,7 @@ const ACTIVE_STATUSES = PENDING_STATUSES;
 const QUADRANTS = domainData.quadrants;
 const QUADRANT_OPTIONS = QUADRANTS.map(({ id, title }) => ({
   value: id,
-  label: title
+  label: title,
 }));
 const QUADRANT_LABELS = Object.fromEntries(
   QUADRANTS.map((quadrant) => [quadrant.id, quadrant.title])
@@ -38,5 +38,5 @@ module.exports = {
   QUADRANTS,
   QUADRANT_OPTIONS,
   QUADRANT_LABELS,
-  BOARD_QUADRANTS
+  BOARD_QUADRANTS,
 };

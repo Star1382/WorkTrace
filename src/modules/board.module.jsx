@@ -11,21 +11,20 @@ export const boardModule = {
       key: 'quadrant-sidebar',
       order: 10,
       render: (context) => (
-        <QuadrantSidebar
-          refreshKey={context.refreshKey}
-          openModule={context.openModule}
-        />
-      )
-    }
+        <QuadrantSidebar refreshKey={context.refreshKey} openModule={context.openModule} />
+      ),
+    },
   ],
   render: (context) => (
     <QuadrantBoard
       refreshKey={context.refreshKey}
       selectedQuadrantId={context.moduleParams?.selectedQuadrantId}
-      onSelectQuadrant={(selectedQuadrantId) => context.setModuleParams('board', { selectedQuadrantId })}
+      onSelectQuadrant={(selectedQuadrantId) =>
+        context.setModuleParams('board', { selectedQuadrantId })
+      }
       onTaskMoved={context.refreshAll}
       onEditTask={context.handleEditTask}
       onToggleStatus={context.handleToggleStatus}
     />
-  )
+  ),
 };

@@ -7,5 +7,6 @@ export const taskService = {
   quickAdd: (text, defaultDueDate) => window.electronAPI.task.quickAdd({ text, defaultDueDate }),
   update: (task) => window.electronAPI.task.update(task),
   toggleStatus: (id, status) => window.electronAPI.task.toggleStatus(id, status),
-  delete: (id) => window.electronAPI.task.delete(id)
+  delete: (id) => window.electronAPI.task.delete(id),
+  countAll: () => window.electronAPI.task.countAll(),
 };

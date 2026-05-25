@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import QuickAddInput from './QuickAddInput';
 import TaskItem from './TaskItem';
 import ContextMenu from './ContextMenu';
+import WelcomeGuide from './WelcomeGuide';
 
 const MENU_WIDTH = 176;
 const MENU_HEIGHT = 216;
@@ -9,6 +10,7 @@ const MENU_HEIGHT = 216;
 /**
  * 任务列表 —— 组合 QuickAddInput / TaskItem / ContextMenu
  * 只管理 contextMenu 状态和 taskRefs，不包含子组件的渲染细节
+ * isEmpty / onCreateSamples 用于首次使用引导
  */
 function TaskList({
   tasks,
@@ -16,13 +18,16 @@ function TaskList({
   selectedTaskId,
   quickAddDraft,
   quickEditTaskId,
+  isEmpty,
+  isCreatingSamples,
   onSelectTask,
   onToggleStatus,
   onChangeStatus,
   onEdit,
   onDelete,
   onAdd,
-  onQuickAdd
+  onQuickAdd,
+  onCreateSamples,
 }) {
   const [contextMenu, setContextMenu] = useState(null);
   const quickInputRef = useRef(null);
@@ -68,7 +73,9 @@ function TaskList({
     <div className="space-y-4">
       <QuickAddInput ref={quickInputRef} draft={quickAddDraft} onQuickAdd={onQuickAdd} />
 
-      {tasks.length === 0 ? (
+      {isEmpty === true && tasks.length === 0 ? (
+        <WelcomeGuide onDismiss={onCreateSamples} isCreating={isCreatingSamples} />
+      ) : tasks.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
           <p className="text-lg">暂无任务</p>
           <p className="text-sm mt-2">点击下方按钮添加新任务</p>
@@ -77,7 +84,9 @@ function TaskList({
         tasks.map((task) => (
           <TaskItem
             key={task.id}
-            ref={(node) => { taskRefs.current[task.id] = node; }}
+            ref={(node) => {
+              taskRefs.current[task.id] = node;
+            }}
             task={task}
             selectedTaskId={selectedTaskId}
             highlightedTaskId={highlightedTaskId}

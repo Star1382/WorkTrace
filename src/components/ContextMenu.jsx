@@ -34,7 +34,10 @@ function ContextMenu({ menu, onChangeStatus, onDelete, onClose }) {
       <div className="border-t my-1"></div>
       <button
         type="button"
-        onClick={() => { onDelete(task.id); onClose(); }}
+        onClick={() => {
+          onDelete(task.id);
+          onClose();
+        }}
         className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
       >
         删除任务

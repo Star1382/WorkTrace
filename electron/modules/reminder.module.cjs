@@ -18,24 +18,29 @@ function parseReminderTime(value) {
 
 function getDueReminderTasks(db) {
   const now = new Date();
-  return db.prepare(`
+  return db
+    .prepare(
+      `
     SELECT id, title, description, quadrant, status, due_date, remind_at, created_at, updated_at, completed_at
     FROM tasks
     WHERE remind_at IS NOT NULL
       AND remind_at != ''
       AND status IN (${ACTIVE_STATUSES.map(() => '?').join(', ')})
     ORDER BY remind_at ASC
-  `).all(...ACTIVE_STATUSES).filter((task) => {
-    const remindAt = parseReminderTime(task.remind_at);
-    return remindAt && remindAt <= now;
-  });
+  `
+    )
+    .all(...ACTIVE_STATUSES)
+    .filter((task) => {
+      const remindAt = parseReminderTime(task.remind_at);
+      return remindAt && remindAt <= now;
+    });
 }
 
 function formatSqlDateTime(date) {
   const pad = (value) => String(value).padStart(2, '0');
   return [
     `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
-    `${pad(date.getHours())}:${pad(date.getMinutes())}:00`
+    `${pad(date.getHours())}:${pad(date.getMinutes())}:00`,
   ].join(' ');
 }
 
@@ -56,9 +61,13 @@ function focusTask(context, task) {
 module.exports = {
   name: 'reminder',
 
+  // 导出供测试使用（纯函数，无副作用）
+  parseReminderTime,
+  getDueReminderTasks,
+
   registerHandlers(ipcMain, db, context = {}) {
     const notifiedKeys = new Map();
-    
+
     const cleanupOldKeys = () => {
       if (notifiedKeys.size > MAX_NOTIFIED_KEYS) {
         const entries = Array.from(notifiedKeys.entries());
@@ -83,7 +92,7 @@ module.exports = {
       const notification = new Notification({
         title: 'WorkTrace 任务提醒',
         body: task.title,
-        silent: false
+        silent: false,
       });
       notification.on('click', () => focusTask(context, task));
       notification.show();
@@ -109,11 +118,13 @@ module.exports = {
       try {
         const delayMinutes = Number.isFinite(Number(minutes)) ? Number(minutes) : 10;
         const nextReminder = new Date(Date.now() + delayMinutes * 60 * 1000);
-        db.prepare(`
+        db.prepare(
+          `
           UPDATE tasks
           SET remind_at = ?, updated_at = CURRENT_TIMESTAMP
           WHERE id = ?
-        `).run(formatSqlDateTime(nextReminder), taskId);
+        `
+        ).run(formatSqlDateTime(nextReminder), taskId);
         return { success: true };
       } catch (error) {
         return { success: false, error: error.message };
@@ -123,5 +134,5 @@ module.exports = {
     setTimeout(checkAndNotify, START_DELAY_MS);
     setInterval(checkAndNotify, CHECK_INTERVAL_MS);
     setInterval(cleanupOldKeys, KEY_CLEANUP_INTERVAL_MS);
-  }
+  },
 };

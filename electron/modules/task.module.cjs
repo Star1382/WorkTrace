@@ -2,7 +2,12 @@
  * Task 模块 - 任务 CRUD 操作
  */
 const { createTaskRepository } = require('../repositories/task.repository.cjs');
-const { parseLocalDate, formatDate, getWeekRange } = require('../../shared/date.cjs');
+const {
+  parseLocalDate,
+  formatDate,
+  formatDateTime,
+  getWeekRange,
+} = require('../../shared/date.cjs');
 
 const WEEKDAY_INDEX = {
   一: 0,
@@ -13,13 +18,13 @@ const WEEKDAY_INDEX = {
   六: 5,
   日: 6,
   天: 6,
-  '1': 0,
-  '2': 1,
-  '3': 2,
-  '4': 3,
-  '5': 4,
-  '6': 5,
-  '7': 6
+  1: 0,
+  2: 1,
+  3: 2,
+  4: 3,
+  5: 4,
+  6: 5,
+  7: 6,
 };
 
 function addDays(date, days) {
@@ -153,9 +158,17 @@ module.exports = {
     ipcMain.handle('task:toggleStatus', async (event, taskId, newStatus) => {
       try {
         const { TASK_STATUS } = require('../../shared/domain.cjs');
-        const completedAt = newStatus === TASK_STATUS.DONE ? new Date().toISOString() : null;
+        const completedAt = newStatus === TASK_STATUS.DONE ? formatDateTime(new Date()) : null;
         tasks.toggleStatus(taskId, newStatus, completedAt);
         return { success: true };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    });
+
+    ipcMain.handle('task:countAll', async () => {
+      try {
+        return { success: true, data: tasks.countAll() };
       } catch (error) {
         return { success: false, error: error.message };
       }
@@ -169,5 +182,5 @@ module.exports = {
         return { success: false, error: error.message };
       }
     });
-  }
+  },
 };

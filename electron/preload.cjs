@@ -19,22 +19,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
     quickAdd: (params) => ipcRenderer.invoke('task:quickAdd', params),
     update: (task) => ipcRenderer.invoke('task:update', task),
     toggleStatus: (id, status) => ipcRenderer.invoke('task:toggleStatus', id, status),
-    delete: (id) => ipcRenderer.invoke('task:delete', id)
+    delete: (id) => ipcRenderer.invoke('task:delete', id),
+    countAll: () => ipcRenderer.invoke('task:countAll'),
   },
   stats: {
     getQuadrant: () => ipcRenderer.invoke('stats:getQuadrant'),
-    getWeek: () => ipcRenderer.invoke('stats:getWeek')
+    getWeek: () => ipcRenderer.invoke('stats:getWeek'),
   },
   report: {
     weekly: (date) => ipcRenderer.invoke('report:weekly', { date }),
     monthly: (date) => ipcRenderer.invoke('report:monthly', { date }),
     exportText: (type, date) => ipcRenderer.invoke('report:exportText', { type, date }),
     copyToClipboard: (text) => ipcRenderer.invoke('report:copyToClipboard', { text }),
-    saveToFile: (text, filename) => ipcRenderer.invoke('report:saveToFile', { text, filename })
+    saveToFile: (text, filename) => ipcRenderer.invoke('report:saveToFile', { text, filename }),
   },
   reminder: {
     check: () => ipcRenderer.invoke('reminder:check'),
     setSnooze: (taskId, minutes) => ipcRenderer.invoke('reminder:setSnooze', taskId, minutes),
-    onFocusTask: (callback) => on('reminder:focusTask', callback)
-  }
+    onFocusTask: (callback) => on('reminder:focusTask', callback),
+  },
+  backup: {
+    export: () => ipcRenderer.invoke('backup:export'),
+    import: () => ipcRenderer.invoke('backup:import'),
+    exportJSON: () => ipcRenderer.invoke('backup:exportJSON'),
+  },
 });

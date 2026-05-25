@@ -51,7 +51,9 @@ function MonthHeatmap({ date, refreshKey, onDateQuickAdd }) {
       <div className="bg-white border border-gray-200 rounded-lg p-4">
         <div className="grid grid-cols-7 gap-2 mb-2">
           {['日', '一', '二', '三', '四', '五', '六'].map((label) => (
-            <div key={label} className="text-xs font-medium text-gray-500 text-center">{label}</div>
+            <div key={label} className="text-xs font-medium text-gray-500 text-center">
+              {label}
+            </div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-2">

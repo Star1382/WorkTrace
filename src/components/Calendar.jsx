@@ -33,7 +33,20 @@ function Calendar({ selectedDate, onSelectDate }) {
     onSelectDate(today);
   };
 
-  const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+  const monthNames = [
+    '1月',
+    '2月',
+    '3月',
+    '4月',
+    '5月',
+    '6月',
+    '7月',
+    '8月',
+    '9月',
+    '10月',
+    '11月',
+    '12月',
+  ];
   const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
 
   const selectedStr = formatDate(parseLocalDate(selectedDate));
@@ -92,9 +105,7 @@ function Calendar({ selectedDate, onSelectDate }) {
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1 relative">
-        {days}
-      </div>
+      <div className="grid grid-cols-7 gap-1 relative">{days}</div>
     </div>
   );
 }

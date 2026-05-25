@@ -2,7 +2,7 @@ const QUADRANT_DOTS = {
   1: 'bg-red-500',
   2: 'bg-amber-400',
   3: 'bg-blue-500',
-  4: 'bg-emerald-500'
+  4: 'bg-emerald-500',
 };
 
 function TaskStrip({ task, onToggle, onOpenMain }) {

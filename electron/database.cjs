@@ -8,14 +8,14 @@ let db = null;
 function initDatabase() {
   const userDataPath = app.getPath('userData');
   const dbPath = path.join(userDataPath, 'worktrace.db');
-  
+
   if (!fs.existsSync(userDataPath)) {
     fs.mkdirSync(userDataPath, { recursive: true });
   }
-  
+
   db = new Database(dbPath);
   db.pragma('journal_mode = WAL');
-  
+
   console.log('Database initialized at:', dbPath);
   return db;
 }

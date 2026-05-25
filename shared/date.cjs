@@ -80,7 +80,7 @@ function getMonthCalendar(value) {
   return {
     days,
     month: date.getMonth(),
-    title: `${date.getFullYear()}年${date.getMonth() + 1}月`
+    title: `${date.getFullYear()}年${date.getMonth() + 1}月`,
   };
 }
 
@@ -93,5 +93,5 @@ module.exports = {
   getWeekRange,
   getMonthRange,
   getWeekDays,
-  getMonthCalendar
+  getMonthCalendar,
 };

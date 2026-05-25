@@ -5,13 +5,9 @@ import {
   closestCenter,
   useDroppable,
   useSensor,
-  useSensors
+  useSensors,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy
-} from '@dnd-kit/sortable';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { taskService } from '../services/taskService';
 import * as domain from '../shared/domain.js';
@@ -24,25 +20,25 @@ const statusStyles = {
   in_progress: 'bg-blue-100 text-blue-700',
   done: 'bg-green-100 text-green-700',
   stuck: 'bg-red-100 text-red-700',
-  cancelled: 'bg-gray-100 text-gray-500'
+  cancelled: 'bg-gray-100 text-gray-500',
 };
 
 const quadrantStyles = {
   1: { color: 'border-red-200 bg-red-50', badge: 'bg-red-100 text-red-700' },
   2: { color: 'border-amber-200 bg-amber-50', badge: 'bg-amber-100 text-amber-700' },
   3: { color: 'border-blue-200 bg-blue-50', badge: 'bg-blue-100 text-blue-700' },
-  4: { color: 'border-green-200 bg-green-50', badge: 'bg-green-100 text-green-700' }
+  4: { color: 'border-green-200 bg-green-50', badge: 'bg-green-100 text-green-700' },
 };
 
 const quadrants = BOARD_QUADRANTS.map((quadrant) => ({
   ...quadrant,
-  ...quadrantStyles[quadrant.id]
+  ...quadrantStyles[quadrant.id],
 }));
 
 function BoardColumn({ quadrant, tasks, selected, children }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `quadrant-${quadrant.id}`,
-    data: { quadrant: quadrant.id }
+    data: { quadrant: quadrant.id },
   });
 
   return (
@@ -50,9 +46,7 @@ function BoardColumn({ quadrant, tasks, selected, children }) {
       ref={setNodeRef}
       className={`min-h-[260px] rounded-lg border p-4 transition-colors ${quadrant.color} ${
         isOver ? 'ring-2 ring-blue-400 ring-offset-2' : ''
-      } ${
-        selected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-      }`}
+      } ${selected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
@@ -61,7 +55,10 @@ function BoardColumn({ quadrant, tasks, selected, children }) {
         </div>
         <span className={`text-xs px-2 py-1 rounded-full ${quadrant.badge}`}>{tasks.length}项</span>
       </div>
-      <SortableContext items={tasks.map((task) => String(task.id))} strategy={verticalListSortingStrategy}>
+      <SortableContext
+        items={tasks.map((task) => String(task.id))}
+        strategy={verticalListSortingStrategy}
+      >
         <div className="space-y-3">{children}</div>
       </SortableContext>
     </section>
@@ -69,21 +66,14 @@ function BoardColumn({ quadrant, tasks, selected, children }) {
 }
 
 function BoardCard({ task, onEdit, onToggleStatus }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: String(task.id),
-    data: { task, quadrant: Number(task.quadrant) }
+    data: { task, quadrant: Number(task.quadrant) },
   });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition
+    transition,
   };
 
   return (
@@ -121,15 +111,14 @@ function BoardCard({ task, onEdit, onToggleStatus }) {
 
       <div className="flex items-center justify-between gap-2 mt-3">
         <div className="flex items-center gap-2 min-w-0">
-          <span className={`text-xs px-2 py-0.5 rounded ${statusStyles[task.status] || statusStyles.todo}`}>
+          <span
+            className={`text-xs px-2 py-0.5 rounded ${statusStyles[task.status] || statusStyles.todo}`}
+          >
             {TASK_STATUS_LABELS[task.status] || task.status}
           </span>
           <span className="text-xs text-gray-500">{formatShortDate(task.due_date)}</span>
         </div>
-        <button
-          onClick={() => onEdit(task)}
-          className="text-xs text-blue-600 hover:text-blue-800"
-        >
+        <button onClick={() => onEdit(task)} className="text-xs text-blue-600 hover:text-blue-800">
           编辑
         </button>
       </div>
@@ -137,12 +126,19 @@ function BoardCard({ task, onEdit, onToggleStatus }) {
   );
 }
 
-function QuadrantBoard({ refreshKey, selectedQuadrantId, onSelectQuadrant, onTaskMoved, onEditTask, onToggleStatus }) {
+function QuadrantBoard({
+  refreshKey,
+  selectedQuadrantId,
+  onSelectQuadrant,
+  onTaskMoved,
+  onEditTask,
+  onToggleStatus,
+}) {
   const [tasks, setTasks] = useState([]);
   const [message, setMessage] = useState('');
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 }
+      activationConstraint: { distance: 5 },
     })
   );
 
@@ -181,11 +177,13 @@ function QuadrantBoard({ refreshKey, selectedQuadrantId, onSelectQuadrant, onTas
     }
 
     const nextTask = { ...task, quadrant: Number(targetQuadrant) };
-    setTasks((current) => current.map((item) => item.id === task.id ? nextTask : item));
+    setTasks((current) => current.map((item) => (item.id === task.id ? nextTask : item)));
 
     const result = await taskService.update(nextTask);
     if (result.success) {
-      setMessage(`已移动到${quadrants.find((item) => item.id === Number(targetQuadrant))?.title || '新象限'}`);
+      setMessage(
+        `已移动到${quadrants.find((item) => item.id === Number(targetQuadrant))?.title || '新象限'}`
+      );
       onTaskMoved();
     } else {
       setMessage(result.error || '移动失败');
@@ -198,7 +196,9 @@ function QuadrantBoard({ refreshKey, selectedQuadrantId, onSelectQuadrant, onTas
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">四象限看板</h2>
-          <p className="text-sm text-gray-500 mt-1">2×2展示所有已设置四象限的任务，卡片显示标题和状态。</p>
+          <p className="text-sm text-gray-500 mt-1">
+            2×2展示所有已设置四象限的任务，卡片显示标题和状态。
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {selectedQuadrantId && (
