@@ -57,6 +57,8 @@ function createFloatingWindow(getMainWindowCallback) {
     skipTaskbar: true,
     resizable: false,
     show: false,
+    hasShadow: false,
+    backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, 'floatingPreload.cjs'),
       contextIsolation: true,

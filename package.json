@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "start": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "pack": "vite build && electron-builder --win",
+    "pack": "vite build && electron-builder --win --dir",
     "postinstall": "electron-builder install-app-deps",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -55,7 +55,8 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": null
+      "icon": null,
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,

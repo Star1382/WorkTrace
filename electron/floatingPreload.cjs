@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 const INVOKE_WHITELIST = new Set([
   'task:getByDate',
   'task:toggleStatus',
+  'task:quickAdd',
   'stats:getWeek',
   'floating:resizeToContent',
 ]);

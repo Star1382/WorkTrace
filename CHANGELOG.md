@@ -2,6 +2,39 @@
 
 本文档记录 WorkTrace 的主要功能变更、修复和交付状态。
 
+## 2026-05-28 - v0.4.4 小黄条毛玻璃UI重构与快捷输入
+
+状态：已完成浮动窗口毛玻璃效果、快捷输入框、完整透明支持和欢迎引导更新。
+
+### Added
+
+- **小黄条快捷输入**：`src/floating/App.jsx` 底部新增输入框，直接在小黄条中打字回车创建当日任务，无需切到主窗口。新增 `task:quickAdd` 到浮窗 IPC 白名单。
+- **浮窗毛玻璃效果**：参考小智桌面风格，背景 `rgba(20,20,25,0.40)` + `backdrop-blur(20px)`，圆角 16px，细边框，壁纸可透过。
+- **Electron 窗口透明支持**：`floatingWindow.cjs` 添加 `hasShadow: false` + `backgroundColor: '#00000000'`，确保圆角外区域完全透明。
+
+### Changed
+
+- **浮窗 UI 全面重构**（`src/floating/App.jsx`、`src/floating/components/TaskStrip.jsx`）：
+  - 标题/按钮/文字颜色统一降低透明度，hover 微光感
+  - 任务条目 `rounded-lg` + `hover:bg-white/[0.06]`
+  - 复选框完成态 `emerald-400`，未完成 `white/25`
+  - 分割线 `border-white/[0.06]` 极细
+  - 淡出透明度 `opacity-30` → `opacity-40`
+- **欢迎引导更新**（`src/components/WelcomeGuide.jsx`）：新增第 0 步小黄条介绍（位置、快捷键 Ctrl+Shift+W、用法），置于智能添加之前。
+- **`pack` 脚本**：改为 `electron-builder --win --dir`，跳过 NSIS 安装包和 rcedit 版本戳记，仅产出绿色免安装版到 `release\win-unpacked\`。
+
+### Fixed
+
+- **浮窗不透明根因修复**：`src/index.css` 删除 `body { background: #f5f5f5 }`（该全局样式被 `src/floating/main.jsx` 引入，覆盖了透明背景，导致壁纸完全透不过来）。主窗口背景由 `App.jsx` 的 `bg-gray-100` 独立控制，互不干扰。
+- **浮窗圆角外残留边框**：外层容器加 `overflow-hidden rounded-2xl`，裁掉圆角外的像素。
+
+### Verified
+
+- 已执行生产构建：`npm run build`，73 模块转换通过。
+- 已执行 `npm run pack`，绿色版 `release\win-unpacked\WorkTrace.exe` 产出。
+- 浮窗在桌面壁纸上显示半透明毛玻璃效果，圆角外无残留边框。
+- 小黄条快捷输入可正常创建任务并刷新列表。
+
 ## 2026-05-27 - v0.4.3 Bug修复与上线补齐
 
 状态：已完成已知 Bug 修复、打包配置、新用户引导、测试体系、代码规范和数据库备份。
